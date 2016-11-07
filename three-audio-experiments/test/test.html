@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ThreeAudio Test - Aphex Twin Face</title>
+  <script type="text/javascript" charset="utf-8" src="domready.js"></script>
+  <script type="text/javascript" charset="utf-8" src="tquery-bundle.js"></script>
+  <script type="text/javascript" charset="utf-8" src="ThreeBox.js"></script>
+  <script type="text/javascript" charset="utf-8" src="../build/ThreeAudio-tquery.js"></script>
+  <script type="text/javascript" charset="utf-8">
+    DomReady.ready(function() {
+      if (!window.webkitAudioContext ||
+       !document.createElement('canvas').getContext('experimental-webgl')) {
+         document.getElementById('browser').style.display = 'block';
+         return;
+       }
+
+      ThreeBox.preload([
+        '../build/ThreeAudio.glsl.html',
+        '../shaders/test.glsl.html',
+      ], function () {
+        var options = {
+          cameraControls: true,
+          orbit: 7,
+          theta: 1,
+          phi: 3.14,
+        };
+        var element = document.getElementById('holder');
+
+        var world = window.world = threeBox(element, options).start();
+
+        var audio = window.audio =
+            world
+            .audio()
+            .mic()
+            .load('test.mp3')
+            .play();
+
+        var textures = window.textures = audio.textures(512);
+
+        var material = window.material = textures.material('test-vertex', 'test-fragment');
+
+        var mesh = window.mesh = material.grid(1, 1, 512, 512).addTo(world);
+      });
+    });
+  </script>
+  <style type="text/css" media="screen">
+    * {
+      -webkit-box-sizing: border-box;
+      -moz-box-sizing: border-box;
+      box-sizing: border-box;
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: sans-serif;
+    }
+    #holder {
+      width: 100%;
+      height: 100%;
+      background: #ccc;
+    }
+    #message, #browser {
+      background: rgba(0, 0, 0, .7);
+      color: #ccc;
+      border-radius: 10px;
+      position: absolute;
+      left: 50%;
+      margin-left: -200px;
+      width: 400px;
+      bottom: 20px;
+      padding: 10px 20px;
+      text-align: center;
+    }
+    #message a {
+      color: #fff;
+    }
+    #browser {
+      display: none;
+      top: 20px;
+      bottom: auto;
+      color: #ffeeee;
+      background: rgba(128, 0, 20, .7);
+    }
+  </style>
+</head>
+<body>
+  <div id="browser">This demo only works in Chrome or Safari, with WebGL enabled.</div>
+  <div id="holder"></div>
+  <div id="message">This is the face hidden in the Aphex Twin track Equation, revealed on a logarithmic spectrogram.<br><br>
+    <a href="https://github.com/unconed/ThreeAudio.js/blob/master/test/test.html">Source</a> &middot; <a href="https://github.com/unconed/ThreeAudio.js/blob/master/shaders/test.glsl.html">Shaders</a>
+</body>
+</html>

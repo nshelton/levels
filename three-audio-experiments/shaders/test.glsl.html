@@ -1,0 +1,82 @@
+<!-- audio material shader -->
+<script type="application/x-glsl" id="test-vertex">
+
+// Audio data textures
+uniform sampler2D freqData;
+uniform sampler2D timeData;
+
+// Offset and sample size for sampling data textures
+uniform float audioOffset;
+uniform vec2 audioStep;
+
+// Beat detection. Is = 0 or 1, Was = smoothed value.
+uniform float audioIsBeat;
+uniform float audioWasBeat;
+
+// Precalculated audio levels, the components being (all, bass, mid, treble).
+// Contains raw levels, smoothed levels and instantaneous change in levels.
+uniform float audioLevels[4];
+uniform float audioLevelsSmooth[4];
+uniform float audioLevelsChange[4];
+
+// Pass UVs into fragment shader
+varying vec2 vUV;
+varying vec2 vAudioUV;
+
+void main() {
+  // Calculate correct UV offset for sampling cyclic audio buffer.
+  vec2 audioUV = vec2(uv.x, uv.y + audioOffset);
+  vUV = uv;
+
+  // Render time data on a grid.
+  vec3 pos = vec3(
+    log(uv.x) + 2.2,
+    position.z + texture2D(freqData, audioUV).a * 1.0 - .5,
+    -position.y * 4.0);
+
+  // Pass correct UV offset to fragment shader.
+  vAudioUV = audioUV;
+
+  // Project vertex into screen space.
+  gl_Position = projectionMatrix *
+                modelViewMatrix *
+                vec4(pos, 1.0);
+}
+</script>
+
+<script type="application/x-glsl" id="test-fragment">
+
+// Audio data textures
+uniform sampler2D freqData;
+uniform sampler2D timeData;
+
+// Offset and sample size for sampling data textures
+uniform float audioOffset;
+uniform vec2 audioStep;
+
+// Beat detection. Is = 0 or 1, Was = smoothed value.
+uniform float audioIsBeat;
+uniform float audioWasBeat;
+
+// Precalculated audio levels, the components being (all, bass, mid, treble).
+// Contains raw levels, smoothed levels and instantaneous change in levels.
+uniform float audioLevels[4];
+uniform float audioLevelsSmooth[4];
+uniform float audioLevelsChange[4];
+
+// Pass UVs into fragment shader
+varying vec2 vUV;
+varying vec2 vAudioUV;
+
+void main() {
+  float alpha = texture2D(freqData, vAudioUV).a;
+  float hue = -alpha * 6.0 - 1.0;
+  float r = sin(hue);
+  float g = sin(hue+2.08);
+  float b = sin(hue+4.16);
+  vec3 rgb = vec3(r, g, b) * .5 + .5;
+  vec4 color = vec4(alpha * 1.5 * rgb, 1.0);
+
+  gl_FragColor = color;
+}
+</script>

@@ -1,0 +1,313 @@
+<html><head>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.2/underscore-min.js"></script>
+	<script src="/js/three.min.js"></script>
+	<script src="/js/three.util.js"></script>
+	<script src="/three-audio-experiments/vendor/microevent.js"></script>
+	<script src="/three-audio-experiments/vendor/dsp.js"></script>
+	<script src="/js/TrackballControls.js"></script>
+	<script src="/js/jquery.min.js"></script>
+	<script src="/js/stats.min.js"></script>
+	<script src="/three-audio-experiments/build/ThreeAudio.js"></script>
+<script src="../js/dat.gui.min.js"></script>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-26353276-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+</head>
+<body style="margin:0">
+
+<!-- audio material shader -->
+<script type="application/x-glsl" id="vertex">
+	// Audio data textures
+	uniform sampler2D freqData;
+	uniform sampler2D timeData;
+
+	// Offset and sample size for sampling data textures
+	uniform float audioOffset;
+	uniform vec2 audioStep;
+
+	// Beat detection. Is = 0 or 1, Was = smoothed value.
+	uniform float audioIsBeat;
+	uniform float audioWasBeat;
+
+	// Precalculated audio levels, the components being (all, bass, mid, treble).
+	// Contains raw levels, smoothed levels and instantaneous change in levels.
+	uniform float audioLevels[4];
+	uniform float audioLevelsSmooth[4];
+	uniform float audioLevelsChange[4];
+
+	// Pass UVs into fragment shader
+	varying vec2 vUV;
+	varying vec2 vAudioUV;
+
+	uniform float shell_param[5];
+
+	vec3 seashell_map(vec2 uv){
+		float b = shell_param[1];
+		float a = shell_param[0];
+
+		float pi = 3.1415;
+		float v = uv.x * 2. * pi;
+		float u = pow(uv.y,0.2) *50. ;
+
+		 vec3 pos = vec3(
+			a * exp(u/(shell_param[2]*pi)) * cos(u) * pow(cos((v - pi)/2.), 2.),
+			b * exp(u/(shell_param[2]*pi)) * sin(u) * pow(cos((v - pi)/2.), 2.),
+			exp(u/(shell_param[3]*pi)) - sin(v) + exp(u/(shell_param[2]*pi)) * sin(v));
+		return pos;
+
+	}
+
+	vec3 seashell_center(float y) {
+		float u = pow(y,0.2 ) * 50. ;
+	    float pi = 3.1415;
+		return vec3(
+			exp(shell_param[0]/2. * u/(shell_param[2]*pi)) * cos(u),
+			exp(shell_param[1]/2. * u/(shell_param[2]*pi)) * sin(u),
+	        exp(u/(shell_param[3]*pi)));
+	}
+
+
+	void main() {
+	  // Calculate correct UV offset for sampling cyclic audio buffer.
+	  vec2 audioUV = vec2(2. * abs(uv.x - 0.5), uv.y + audioOffset);
+	  // vec2 audioUV = vec2(uv.x, uv.y + audioOffset);
+	  vUV = uv;
+
+
+	  vec3 pos = seashell_map(vUV);
+
+	  // center of seashell slice at time u - for normal computation
+	  vec3 center = seashell_center(vUV.y);
+
+	  vec3 normal = normalize(pos - center);
+
+	  // float bump = pow(cos(vUV.y*40.) * exp(vUV.y/2.)  ,4.) * pow(sin(vUV.x * 3.1415),2.);
+	  float bump = 5. * pow(1. - vUV.x, 2.);
+
+	  pos = pos + normal * shell_param[4] * texture2D(freqData, audioUV).a  * bump * pow(vUV.y*2.,2.);
+
+	  // vec3 dy = seashell_map(vUV + vec2(0.,  0.01)) - pos;
+	  // vec3 dx = seashell_map(vUV + vec2(0.01, 0.)) - pos;
+
+	  // pos =  pos + cross( normalize(dx), normalize(dy)) * texture2D(freqData, vAudioUV).a ;
+
+	  // Pass correct UV offset to fragment shader.
+	  vAudioUV = audioUV;
+
+	  // Project vertex into screen space.
+	  gl_Position = projectionMatrix *
+	                modelViewMatrix *
+	                vec4(pos, 1.0);
+	}
+</script>
+
+<script type="application/x-glsl" id="fragment">
+	vec3 hsv2rgb(vec3 c) {
+	    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+	    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+	    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+	}
+	vec3 cie2rgb(vec3 c) {
+		mat3 A = mat3(
+			2.3706743,-0.9000405,-0.4706338,
+			-0.5138850,1.4253036,0.0885814,
+			0.0052982,-0.0146949,1.0093968);
+		return c * A;
+	}
+	// Audio data textures
+	uniform sampler2D freqData;
+	uniform sampler2D timeData;
+
+	// Offset and sample size for sampling data textures
+	uniform float audioOffset;
+	uniform vec2 audioStep;
+
+	// Beat detection. Is = 0 or 1, Was = smoothed value.
+	uniform float audioIsBeat;
+	uniform float audioWasBeat;
+
+	// Precalculated audio levels, the components being (all, bass, mid, treble).
+	// Contains raw levels, smoothed levels and instantaneous change in levels.
+	uniform float audioLevels[4];
+	uniform float audioLevelsSmooth[4];
+	uniform float audioLevelsChange[4];
+
+	// Pass UVs into fragment shader
+	varying vec2 vUV;
+	varying vec2 vAudioUV;
+
+	void main() {
+	  float alpha = texture2D(freqData, vAudioUV).a;
+	  vec3 beat = vec3(0.5) * audioWasBeat;
+
+	  // // black0green
+	  // vec3 top = vec3(0.,1.,0.) * alpha ;
+	  // vec3 bot = vec3(0.0,0.0,0.0) * (1. - alpha) ;
+
+	  //hsv
+	  // alpha =(-alpha / 2.)+ 1.0;
+	  vec3 grad = cie2rgb(vec3(vUV.y, vUV.x, ( alpha))) ;
+
+	  // vec3 freq = hsv2rgb(vec3(.5-alpha/2.,1.-alpha,1.0));
+
+	  // vec4 color = vec4(top + bot +beat, 1.0);
+	  vec3 ambient = vec3(0.2);
+	  vec4 color = vec4(grad * alpha + beat, 1.0) ;
+
+	  gl_FragColor = color;
+	}
+</script>
+
+<script>
+
+	// console.log(audioSource)
+
+
+function initScene(scene, camera, controls, renderer) {
+    controls.target.set(0, 0, 0);
+    camera.position.set(100, 0, 0)
+	controls.noZoom = false;
+	controls.noPan = false;
+
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	renderer.setClearColor(0x888888);
+	renderer.autoClear = false;
+	var container = $('body');
+    container.append(renderer.domElement);
+}
+
+function drawPlane(scene, audioTextures, params) { // res, width, center) {
+	var geometry = new ThreeAudio.GridGeometry(audioTextures, params.width, params.width, params.res, params.res );
+	var vertexShader = document.getElementById( 'vertex' ).textContent;
+    var fragmentShader = document.getElementById( 'fragment' ).textContent;
+
+    var material = new ThreeAudio.Material(audioTextures, vertexShader, fragmentShader, null, params.uniforms);
+
+	var plane = new THREE.Mesh( geometry, material );
+	plane.position.z = 90;
+
+	plane.rotation.x = 3.14;
+	// plane.rotation.z = 3.14;
+	scene.add( plane );
+}
+
+function drawSkeleton(scene) { // res, width, center) {
+
+
+	var mat = new THREE.LineBasicMaterial({color:0xffffff})
+	var geo = new THREE.Geometry();
+
+	var pi = 3.1415
+
+	for ( var i = 0; i <= 1; i += 0.01) {
+		var u = Math.pow(i,0.4 ) *50.;
+
+		geo.vertices.push(new THREE.Vector3(
+				Math.exp(u/(6.*pi)) * Math.cos(u),
+				Math.exp(u/(6.*pi)) * Math.sin(u),
+		        Math.exp(u/(3.8*pi))
+			));
+	}
+
+	scene.add( new THREE.Line(geo, mat) );
+}
+
+var scene;
+
+$( document ).ready(function() {
+	
+
+	var guiParam = function() {
+		this.a = 2.0;
+		this.b = 2.0;
+		this.c = 6.0;
+		this.d = 3.8;
+		this.deform = 7.0;
+		this.trackball_enabled = true;
+	};
+
+	var options = new guiParam();
+	var gui = new dat.GUI();
+	var uniforms = {
+	      shell_param: { // float initialized to 0
+          type: "fv1", 
+          value: [options.a,options.b,options.c,options.d,options.deform]
+        }
+    };
+
+
+	gui.add(options, 'a', 2.0).min(0).max(10).step(0.01).onChange(function() {
+		uniforms.shell_param.value[0] = options.a;
+	});
+	gui.add(options, 'b', 2.0).min(0).max(10).step(0.01).onChange(function() {
+		uniforms.shell_param.value[1] = options.b;
+	});
+	gui.add(options, 'c', 6).min(0).max(20).step(0.01).onChange(function() {
+		uniforms.shell_param.value[2] = options.c;
+	});
+	gui.add(options, 'd', 3.8).min(3).max(10).step(0.01).onChange(function() {
+		uniforms.shell_param.value[3] = options.d;
+	});
+	gui.add(options, 'deform', 10.0).min(0).max(100).step(0.1).onChange(function() {
+		uniforms.shell_param.value[4] = options.deform;
+	});
+
+
+	gui.add(options, 'trackball_enabled').onFinishChange(function() {
+		controls.enabled = options.trackball_enabled;
+	});
+
+	scene = new THREE.Scene();
+	var camera = new THREE.PerspectiveCamera( 49, window.innerWidth / window.innerHeight, 1, 1000 );
+    var controls = new THREE.TrackballControls(camera);
+    // controls.enabled = false;
+	var renderer = new THREE.WebGLRenderer();
+
+	var audioSource = (new ThreeAudio.Source()).load('/mp3/ohmy.mp3').play();
+	var audioTextures = new ThreeAudio.Textures(renderer, audioSource, 512);	
+	initScene(scene, camera, controls, renderer);
+
+	drawPlane(scene, audioTextures, {
+		res : 0,
+		width: 10,
+		center : new THREE.Vector3(0, 0, 0),
+		uniforms : uniforms
+	});
+
+
+	var ticks = 0;
+
+	var stats = new Stats();
+	stats.domElement.style.position = 'absolute';
+	stats.domElement.style.top = '0px';
+	$("body").append( stats.domElement );
+
+	function render() {
+		ticks++;
+		controls.update();
+	    scene.rotation.z += 0.0005;
+	    scene.rotation.y = Math.sin(ticks/2000) * 3.14/2 + 3.14 * 3/2;
+	    scene.rotation.x = Math.cos(ticks/2000) * 3.14/2;
+	    scene.updateMatrix();
+
+		renderer.render( scene, camera );
+		requestAnimationFrame( render );
+		audioTextures.update()
+     	stats.update();
+
+
+	}
+	render();
+});
+</script>
+
+</body>
+</html>
