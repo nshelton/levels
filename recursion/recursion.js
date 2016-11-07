@@ -158,17 +158,17 @@ run = function(shaders) {
   // ================ ===================
   var accumulator = 0;
   var beat = 0;
-  var smoothBPM = 120;
+  smoothBPM = 120;
+  startTime = Date.now() ;
 
 	function render() {
-    var frameStart = Date.now();
 
 		controls.update();
     stats.update();
     audio.update();
       syncAudio(shader_raymarch, audio);
 
-    time += 1/60;
+    time = (Date.now() - startTime) / 1000;
     // beat = audio.data.beat.bpm;
 
 		var a = camera.position;
@@ -224,8 +224,9 @@ run = function(shaders) {
         rotationDir = new GLOW.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).setLength(0.0001);
         // target = 
       }
+        rotmag = 1.0;
     } else {
-      rotateImpulse = false;
+        rotmag = 0.1;
     }
 
     rotmag = Math.easeInOutQuart(beat, 0, 1, 1);
@@ -235,14 +236,14 @@ run = function(shaders) {
       setUniform(shader_raymarch, "rotationz",  uniforms.rotationz + rotationDir.value[2] * rotmag)
 
 
-      uniforms.translationx = Math.sin(lfo/ 32.) * 10 + 10;
-      uniforms.translationy = Math.sin(lfo/ 16.) * 10 + 10;
-      uniforms.translationz = Math.sin(lfo/ 8.) * 10 + 10;
+      uniforms.translationx = Math.sin(lfo/ 4.) * 10 + 10;
+      uniforms.translationy = Math.sin(lfo/ 8.) * 10 + 10;
+      uniforms.translationz = Math.sin(lfo/ 2.)  * 10 + 10;
 
 
-      // setUniform(shader_raymarch, "dimx",  audio.data.levels.smooth[0] * 40 + 1);
-      // setUniform(shader_raymarch, "dimy",  audio.data.levels.smooth[1] * 40 + 1);
-      // setUniform(shader_raymarch, "dimz",  audio.data.levels.smooth[2] * 40 + 1);
+      // setUniform(shader_raymarch, "dimx",  Math.sin(lfo/ 4.) * 25 + 25);
+      setUniform(shader_raymarch, "dimy",  Math.sin(lfo/ 32.) * 25 + 25);
+      setUniform(shader_raymarch, "dimz",  Math.sin(lfo/ 64.) * 25 + 25);
 
     // nice n easy / constantv
     // transitionspeed = 1/128 * (audio.data.beat.bpm / 360);
@@ -253,10 +254,11 @@ run = function(shaders) {
 
     // if(audio.data.beat.is)
       // alpha = 0.900;
-      var weight =  audio.data.beat.confidence * 0.01;
+      var weight =  audio.data.beat.confidence * 0.001;
+    console.log( audio.data.beat.confidence, smoothBPM, lfo );
+    smoothBPM = audio.data.beat.bpm * weight + smoothBPM * (1.0 - weight);
 
-    smoothBPM = audio.data.beat.bpm * weight + smoothBPM * (1.0 - weight)
-    lfo =  (TWO_PI * 60 * time) / smoothBPM;
+    lfo =  (TWO_PI * time / 60) * smoothBPM;
     beat = (lfo / 4) % 4; 
 
     shaderPass(context, shader_raymarch, fbo_march)
