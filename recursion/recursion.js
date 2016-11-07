@@ -126,7 +126,7 @@ run = function(shaders) {
 
 	var w = window.innerWidth;
 	var h = window.innerHeight;
-	scale = 1;
+	scale = 2;
 	
 	var fbo_march 			= buildFBO(w/scale, h/scale);
 	var fbo_render			= buildFBO(w, h);

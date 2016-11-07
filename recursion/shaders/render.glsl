@@ -1,6 +1,3 @@
-#ifdef GL_ES
-	precision highp float;
-#endif
 
 uniform sampler2D 	source0; 	// low res
 uniform sampler2D 	source1; 	// noise

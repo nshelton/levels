@@ -1,6 +1,5 @@
-#ifdef GL_ES
-	precision highp float;
-#endif
+
+
 mat3 inv(mat3 m_in) {
 	vec3 i0 = m_in[0];
 	vec3 i1 = m_in[1];
@@ -278,8 +277,9 @@ void main() {
     bool hit = false;
 
 
+    float r_scale = 2.0;
 
-	vec3 ray = vec3(2.*gl_FragCoord.xy - vec2(width, height), height);
+	vec3 ray = vec3(2.*gl_FragCoord.xy - vec2(width, height)/r_scale, height/r_scale);
 	vec4 n = texture2D(source0, fract(ray.xy * time/2.));
     vec2 jitter = (n.xy - 0.5) * 2.;
 	ray = normalize(vec3(ray.xy + jitter, -sqrt(max(ray.z*ray.z - dot(ray.xy, ray.xy)*.2, 0.))));
