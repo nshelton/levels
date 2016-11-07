@@ -44,7 +44,8 @@ uniform mat4 		modelView;
 
 uniform	float 		rotationx;
 uniform	float 		rotationy;
-uniform	float 		rotationz;
+uniform float       rotationz;
+uniform	float 		absMirror;
 
 uniform	float 		dimx;
 uniform	float 		dimy;
@@ -91,7 +92,7 @@ vec2 DE(vec3 p){
     // p *= inv(mat3(modelView)); 
     // p.yz = rot2D(p.yz, time);
 
-    
+    mat4 s_modelview = modelView;
     vec4 _audioChange = audioLevelsSmooth;
     vec4 _audioAccum = audioLevelsAccum;
     vec4 _audioLevels = audioLevels;
@@ -175,6 +176,8 @@ vec2 DE(vec3 p){
     return vec2(d -  (thickness + freq) * s , orbit);  
 
 }
+
+
 // vec4 box(vec3 p, float w){
 //     p = abs(p);
 //     float dx = p.x-w;
@@ -184,26 +187,53 @@ vec2 DE(vec3 p){
 //     return vec4(m,dx,dy,dz);
 // }
 
-// vec4 DE(vec3 p){
+vec3 opRep( vec3 p, vec3 c )
+{
+    return  mod(p,c)-0.5*c;
+}
+
+vec2 DE_new(vec3 p){
+    vec3 t = (modelView[3].xyz) * iterCount;
+    vec4 p_h = vec4(p, 1.0);
+    vec3 offs =  vec3(dimx, dimy, dimz);
+
+    
+    vec4 _audioChange = audioLevelsSmooth;
+    vec4 _audioAccum = audioLevelsAccum;
+    vec4 _audioLevels = audioLevels;
+    float b = audioIsBeat + beatAccum;
+
+    vec3 rot = vec3(rotationx, rotationy, rotationz);
+
+    float d = 1e10;
+    // p_h.xyz -= p;
+    vec2 mask = vec2(-1.0, 1.0);
+    mat4 modelView_s = modelView;
 
 
-// vec4 map(vec3 p){
-//     for (int i = 0; i < 5; i++){
-//         p = abs(p*rotation + vec3(0.1, .0, .0));
-//         p.y -= .8;
-//         p.x -= .06;
-//         p.z -= jitter;
-//         p.xy = p.yx;
-//     }
-//     return box(p, .6);
-// }
+    for (int i = 0; i < 10; i++){
+        if( float(i) > iterCount)
+          break;
+
+        p_h = (modelView_s * p_h);
+        p_h = abs(p_h);
+
+
+        d = min(d, udBox(p_h.xyz  , offs)) ;
+
+        // d *= scale;
+        // offs *= scale;
+        // modelView_s*=scale;
+    }
+
+    float level = 0.0;
+
+
+    return vec2(d, level);
+}
 
 
 
-
-    return vec2(d , level);  
-
-// }
 
 vec3 gradient(vec3 p) {
 	vec2 e = vec2(0., shadeDelta);
@@ -283,6 +313,7 @@ void main() {
         shade = 1.0;
 
     // float shadowAmount = hit? shadow(point, vec3(0.0, 1.0, 1.0)) : 1.0;
-	gl_FragColor = vec4(dist.y, float(iter)/float(MAX_ITER), abs(shade), 1.0);
+    gl_FragColor = vec4(dist.y, float(iter)/float(MAX_ITER), abs(shade), 1.0);
+	// gl_FragColor = vec4(point, 1.0);
 
 }

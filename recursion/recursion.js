@@ -8,9 +8,14 @@ var Uniforms = function() {
   this.rotationz        = 0.0;
   this.rotationx        = 0.0;
 
+  this.dimx             = 0.0;
   this.dimy             = 0.0;
   this.dimz             = 0.0;
-  this.dimx             = 0.0;
+
+  this.translationx             = 0.0;
+  this.translationy             = 0.0;
+  this.translationz             = 0.0;
+
   this.thickness        = 0.01;
   this.palette          = 0.0;
   this.ao               = 0.0;
@@ -25,7 +30,8 @@ var Uniforms = function() {
 	this.shadeDelta   	  = 0.001;
   this.termThres        = 0.001;
   this.audioAmount      = 1.0;
-	this.rgbShift		      = 1.0;
+  this.rgbShift         = 1.0;
+	this.absMirror		      = 1.0;
 };
 
 // this.update = function() {
@@ -57,15 +63,21 @@ function setupUI(){
     gui.add(uniforms, "dimy", 0, 50).onChange(function(value) { shader_raymarch.dimy.set(value); }).listen();
     gui.add(uniforms, "dimz", 0, 50).onChange(function(value) { shader_raymarch.dimz.set(value); }).listen();
 
+
+    gui.add(uniforms, "translationx", -50, 50).listen();
+    gui.add(uniforms, "translationy", -50, 50).listen();
+    gui.add(uniforms, "translationz", -50, 50).listen();
+
     gui.add(uniforms, "thickness", 0, 1).onChange(function(value) { shader_raymarch.thickness.set(value); }).listen();
     gui.add(uniforms, "palette", 0, 2).step(1.0/15.0).onChange(function(value) { shader_render.palette.set(value); }).listen();
-    gui.add(uniforms, "scale", 1, 5).onChange(function(value) { shader_raymarch.scale.set(value); }).listen();
-    gui.add(uniforms, "iterCount", 0, 8).onChange(function(value) { shader_raymarch.iterCount.set(value); }).listen();
+    gui.add(uniforms, "scale", 0, 1.5).onChange(function(value) { shader_raymarch.scale.set(value); }).listen();
+    gui.add(uniforms, "iterCount", 0, 8).step(1.0).onChange(function(value) { shader_raymarch.iterCount.set(value); }).listen();
     gui.add(uniforms, "stepRatio", 0, 1).onChange(function(value) { shader_raymarch.stepRatio.set(value); }).listen();
     gui.add(uniforms, "audioAmount", 0, 1).onChange(function(value) { shader_raymarch.audioAmount.set(value); }).listen();
 
     gui.add(uniforms, "ao", 0, 1).step(0.1).onChange(function(value) { shader_render.ao.set(value); }).listen();
     gui.add(uniforms, "shadow", 0, 1).step(0.1).onChange(function(value) { shader_render.shadow.set(value); }).listen();
+    gui.add(uniforms, "absMirror", 0, 1).onChange(function(value) { shader_raymarch.absMirror.set(value); }).listen();
 }
 
 
@@ -166,6 +178,10 @@ run = function(shaders) {
 		var u = camera.up;
 
 
+    shader_raymarch.modelView.setRotation(uniforms.rotationx, uniforms.rotationy, uniforms.rotationz) ;
+    shader_raymarch.modelView.setPosition(uniforms.translationx, uniforms.translationy, uniforms.translationz) ;
+
+
 		shader_raymarch.camMat.setPosition(a.x, a.y, a.z);
 		shader_raymarch.camMat.lookAt(
 			{value:[t.x, t.y, t.z]},
@@ -214,14 +230,20 @@ run = function(shaders) {
 
     rotmag = Math.easeInOutQuart(beat, 0, 1, 1);
       // setUniform(shader_raymarch, "rotationx",  last.rotationx, target.rotationx)
+      setUniform(shader_raymarch, "rotationx",  uniforms.rotationx + rotationDir.value[0] * rotmag)
       setUniform(shader_raymarch, "rotationy",  uniforms.rotationy + rotationDir.value[1] * rotmag)
       setUniform(shader_raymarch, "rotationz",  uniforms.rotationz + rotationDir.value[2] * rotmag)
 
 
+      uniforms.translationx = Math.sin(lfo/ 32.) * 10 + 10;
+      uniforms.translationy = Math.sin(lfo/ 16.) * 10 + 10;
+      uniforms.translationz = Math.sin(lfo/ 8.) * 10 + 10;
 
-      // setUniform(shader_raymarch, "dimx",  Math.sin(lfo/ 32.))
-      setUniform(shader_raymarch, "dimy",  Math.sin(lfo/ 32.) * 25 + 25)
-      setUniform(shader_raymarch, "dimz",  Math.cos(lfo/ 16.) * 25 + 25)
+
+      // setUniform(shader_raymarch, "dimx",  audio.data.levels.smooth[0] * 40 + 1);
+      // setUniform(shader_raymarch, "dimy",  audio.data.levels.smooth[1] * 40 + 1);
+      // setUniform(shader_raymarch, "dimz",  audio.data.levels.smooth[2] * 40 + 1);
+
     // nice n easy / constantv
     // transitionspeed = 1/128 * (audio.data.beat.bpm / 360);
 
@@ -230,8 +252,8 @@ run = function(shaders) {
 
 
     // if(audio.data.beat.is)
-      // alpha = 0.0;
-      var weight =  audio.data.beat.confidence * 0.1;
+      // alpha = 0.900;
+      var weight =  audio.data.beat.confidence * 0.01;
 
     smoothBPM = audio.data.beat.bpm * weight + smoothBPM * (1.0 - weight)
     lfo =  (TWO_PI * 60 * time) / smoothBPM;

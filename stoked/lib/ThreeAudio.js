@@ -827,19 +827,19 @@ ThreeAudio.Source.prototype = {
     // Create filter nodes for bass/mid/treble signals.
     var parameters = {
       bass: {
-        type: 0, // LOWPASS
+        type: 'lowpass', // LOWPASS
         frequency: 160,
         Q: 1.2,
         gain: 2.0//,
       },
       mid: {
-        type: 2, // BANDPASS
+        type: 'bandpass', // BANDPASS
         frequency: 500,
         Q: 1.2,
         gain: 4.0//,
       },
       treble: {
-        type: 1, //HIGHPASS
+        type: 'highpass', //HIGHPASS
         frequency: 2000,
         Q: 1.2,
         gain: 3.0//,
