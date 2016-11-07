@@ -1,6 +1,7 @@
 
 // var shader_raymarch, shader_render, shader_post, audio;
-    var TWO_PI = 3.141519 * 2.0
+    var M_PI = 3.141519 ;
+    var TWO_PI = 3.141519 * 2.0;
 
 var Uniforms = function() {
   this.rotationy        = 0.0;
@@ -34,6 +35,12 @@ var Uniforms = function() {
 //     	// shader_raymarch
 //     }
 
+Math.easeInOutQuart = function (t, b, c, d) {
+  t /= d/2;
+  if (t < 1) return c/2*t*t*t*t + b;
+  t -= 2;
+  return -c/2 * (t*t*t*t - 2) + b;
+};
 
 function setupUI(){
 
@@ -41,24 +48,24 @@ function setupUI(){
 
     gui = new dat.GUI();
     gui.remember(uniforms);
-    gui.add(uniforms, "rotationx", 0, TWO_PI).onChange(function(value) { shader_raymarch.rotationx.set(value); });
-    gui.add(uniforms, "rotationy", 0, TWO_PI).onChange(function(value) { shader_raymarch.rotationy.set(value); });
-    gui.add(uniforms, "rotationz", 0,TWO_PI).onChange(function(value) { shader_raymarch.rotationz.set(value); });
+    gui.add(uniforms, "rotationx", 0, TWO_PI).onChange(function(value) { shader_raymarch.rotationx.set(value); }).listen();
+    gui.add(uniforms, "rotationy", 0, TWO_PI).onChange(function(value) { shader_raymarch.rotationy.set(value); }).listen();
+    gui.add(uniforms, "rotationz", 0,TWO_PI).onChange(function(value) { shader_raymarch.rotationz.set(value); }).listen();
 
 
-    gui.add(uniforms, "dimx", 0, 50).onChange(function(value) { shader_raymarch.dimx.set(value); });
-    gui.add(uniforms, "dimy", 0, 50).onChange(function(value) { shader_raymarch.dimy.set(value); });
-    gui.add(uniforms, "dimz", 0, 50).onChange(function(value) { shader_raymarch.dimz.set(value); });
+    gui.add(uniforms, "dimx", 0, 50).onChange(function(value) { shader_raymarch.dimx.set(value); }).listen();
+    gui.add(uniforms, "dimy", 0, 50).onChange(function(value) { shader_raymarch.dimy.set(value); }).listen();
+    gui.add(uniforms, "dimz", 0, 50).onChange(function(value) { shader_raymarch.dimz.set(value); }).listen();
 
-    gui.add(uniforms, "thickness", 0, 1).onChange(function(value) { shader_raymarch.thickness.set(value); });
-    gui.add(uniforms, "palette", 0, 2).step(1.0/15.0).onChange(function(value) { shader_render.palette.set(value); });
-    gui.add(uniforms, "scale", 1, 5).onChange(function(value) { shader_raymarch.scale.set(value); });
-    gui.add(uniforms, "iterCount", 0, 8).onChange(function(value) { shader_raymarch.iterCount.set(value); });
-    gui.add(uniforms, "stepRatio", 0, 1).onChange(function(value) { shader_raymarch.stepRatio.set(value); });
-    gui.add(uniforms, "audioAmount", 0, 1).onChange(function(value) { shader_raymarch.audioAmount.set(value); });
+    gui.add(uniforms, "thickness", 0, 1).onChange(function(value) { shader_raymarch.thickness.set(value); }).listen();
+    gui.add(uniforms, "palette", 0, 2).step(1.0/15.0).onChange(function(value) { shader_render.palette.set(value); }).listen();
+    gui.add(uniforms, "scale", 1, 5).onChange(function(value) { shader_raymarch.scale.set(value); }).listen();
+    gui.add(uniforms, "iterCount", 0, 8).onChange(function(value) { shader_raymarch.iterCount.set(value); }).listen();
+    gui.add(uniforms, "stepRatio", 0, 1).onChange(function(value) { shader_raymarch.stepRatio.set(value); }).listen();
+    gui.add(uniforms, "audioAmount", 0, 1).onChange(function(value) { shader_raymarch.audioAmount.set(value); }).listen();
 
-    gui.add(uniforms, "ao", 0, 1).step(0.1).onChange(function(value) { shader_render.ao.set(value); });
-    gui.add(uniforms, "shadow", 0, 1).step(0.1).onChange(function(value) { shader_render.shadow.set(value); });
+    gui.add(uniforms, "ao", 0, 1).step(0.1).onChange(function(value) { shader_render.ao.set(value); }).listen();
+    gui.add(uniforms, "shadow", 0, 1).step(0.1).onChange(function(value) { shader_render.shadow.set(value); }).listen();
 }
 
 
@@ -76,24 +83,26 @@ $(document).ready(function() {
 });
 
 
-function randomPreset(last) {
+function randomPreset(last, d_rotation) {
 
 
-  var channel = Math.floor(Math.random() * 3);
 
+  var newRot = new GLOW.Vector3(Math.random(), Math.random(), Math.random());
+  newRot = newRot.setLength(d_rotation);
 
   return {
-    rotationy  : Math.random() * TWO_PI,
-    rotationz  : Math.random() * TWO_PI,
-    rotationx  : Math.random() * TWO_PI,
-
-    dimy       : last.dimy,
-    dimz       : last.dimz,
-    dimx       : last.dimx,
+    rotationy  : newRot.value[0],
+    rotationz  : newRot.value[1],
+    rotationx  : newRot.value[2]
     // scale      : Math.random()*4 + 1.0
   }
 }
 
+function setUniform(shader, id, value)
+{
+    uniforms[id] = value;
+    shader[id].set(value);
+}
 
 run = function(shaders) {
   setupUI();
@@ -119,11 +128,15 @@ run = function(shaders) {
 
   var rotDelta = new GLOW.Matrix4();
   rotDelta.setRotation(0.001, 0.001, 0.001);
+  var rotMag = 0.0;
+  var rotateImpulse = false;
+  var rotationDir ;
+
 
 // Transition logic ===================
   var transitioning = true;
-  var lastPreset = randomPreset(PRESETS[0]);
-  var nextPreset = randomPreset(lastPreset);
+  var lastPreset = randomPreset(PRESETS[0], 0);
+  var nextPreset = randomPreset(lastPreset, 0);
   var alpha = 0.0;
   var transitionspeed = 0.001;
   var lfo = 0.0;
@@ -131,16 +144,20 @@ run = function(shaders) {
 
 
   // ================ ===================
-
   var accumulator = 0;
+  var beat = 0;
+  var smoothBPM = 120;
+
 	function render() {
+    var frameStart = Date.now();
+
 		controls.update();
     stats.update();
     audio.update();
       syncAudio(shader_raymarch, audio);
 
-    time =  Date.now() * 1000.;
-
+    time += 1/60;
+    // beat = audio.data.beat.bpm;
 
 		var a = camera.position;
 		var r = camera.rotation;
@@ -156,7 +173,7 @@ run = function(shaders) {
 		);
 
 
-    shader_post.rgbShift.set(audio.data.levels.smooth[3])
+    // shader_post.rgbShift.set(audio.data.levels.smooth[3] * uniforms.audioAmount)
 
     // shader_raymarch.thickness.set(Math.sin(lfo)* 0.25  + uniforms.thickness);
 
@@ -164,39 +181,67 @@ run = function(shaders) {
 		shader_render.time.set(time);
 
 		requestAnimationFrame(render);
-    if(transitioning) {
-      if(alpha >1.0 ) {// done transitioning
-        alpha = 0.0
-        transitioning = false;
-        lastPreset = nextPreset;
-        nextPreset = randomPreset(lastPreset);
+    // if(transitioning) {
+    //   if(alpha > 1.0 ) {// done transitioning
+    //     alpha = 0.0
+    //     transitioning = false;
+    //     lastPreset = nextPreset;
+    //     nextPreset = randomPreset(lastPreset,audio.data.levels.direct[3] * 2.0);
+    //   }
+
+
+    //   setPreset(nextPreset, lastPreset, alpha, uniforms, gui);
+    //   alpha += transitionspeed;
+
+    // } else{
+    //   wait += transitionspeed /2.;
+
+    //   if(wait > 1.0) {
+    //     transitioning = true;
+    //     wait = 0;
+    //   }
+
+    // }
+
+    if ( beat < 0.5) {
+      if(!rotateImpulse) {
+        rotationDir = new GLOW.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).setLength(0.0001);
+        // target = 
       }
-
-      setPreset(nextPreset, lastPreset, alpha, uniforms, gui);
-      alpha += transitionspeed;
-
-    } else{
-      wait += transitionspeed /2.;
-
-      if(wait > 1.0) {
-        transitioning = true;
-        wait = 0;
-      }
-
+    } else {
+      rotateImpulse = false;
     }
-    // nice n easy / constant
+
+    rotmag = Math.easeInOutQuart(beat, 0, 1, 1);
+      // setUniform(shader_raymarch, "rotationx",  last.rotationx, target.rotationx)
+      setUniform(shader_raymarch, "rotationy",  uniforms.rotationy + rotationDir.value[1] * rotmag)
+      setUniform(shader_raymarch, "rotationz",  uniforms.rotationz + rotationDir.value[2] * rotmag)
+
+
+
+      // setUniform(shader_raymarch, "dimx",  Math.sin(lfo/ 32.))
+      setUniform(shader_raymarch, "dimy",  Math.sin(lfo/ 32.) * 25 + 25)
+      setUniform(shader_raymarch, "dimz",  Math.cos(lfo/ 16.) * 25 + 25)
+    // nice n easy / constantv
     // transitionspeed = 1/128 * (audio.data.beat.bpm / 360);
 
-    transitionspeed = 1/16 * (audio.data.beat.bpm / 360);
-    lfo += 4.0 * transitionspeed* TWO_PI;
+
+
+
 
     // if(audio.data.beat.is)
       // alpha = 0.0;
+      var weight =  audio.data.beat.confidence * 0.1;
+
+    smoothBPM = audio.data.beat.bpm * weight + smoothBPM * (1.0 - weight)
+    lfo =  (TWO_PI * 60 * time) / smoothBPM;
+    beat = (lfo / 4) % 4; 
 
     shaderPass(context, shader_raymarch, fbo_march)
     shaderPass(context, shader_render, fbo_render)
 
     shader_post.draw();
+
 	}
 
 

@@ -89,7 +89,7 @@ float udBox( vec3 p, vec3 b )
 vec2 DE(vec3 p){
 
     // p *= inv(mat3(modelView)); 
-    p.yz = rot2D(p.yz, time);
+    // p.yz = rot2D(p.yz, time);
 
     
     vec4 _audioChange = audioLevelsSmooth;
@@ -151,7 +151,13 @@ vec2 DE(vec3 p){
 
         p=abs(p);
         
+        
+        // d = min(d, (p.x+ p.y +p.z)*amp *0.5);
+
         d = min(d, max(max(p.x, p.y), p.z)*amp);
+        // d = min(d, max(max(p.x, p.y), p.z)*amp);
+
+
         // d = min(d, udBox(p * amp, offs) / s);
 
         if ( dp!= d)
@@ -195,7 +201,7 @@ vec2 DE(vec3 p){
 
 
 
-    // return vec2(d , level);  
+    return vec2(d , level);  
 
 // }
 
@@ -244,8 +250,8 @@ void main() {
 
 
 	vec3 ray = vec3(2.*gl_FragCoord.xy - vec2(width, height), height);
-	vec4 n = texture2D(source0, fract(ray.xy + time/2.));
-    vec2 jitter = (n.xy - 0.5) / vec2(width, height) ;
+	vec4 n = texture2D(source0, fract(ray.xy * time/2.));
+    vec2 jitter = (n.xy - 0.5) * 2.;
 	ray = normalize(vec3(ray.xy + jitter, -sqrt(max(ray.z*ray.z - dot(ray.xy, ray.xy)*.2, 0.))));
 
 
@@ -273,7 +279,8 @@ void main() {
     }
     
     float shade = dot(gradient(point - ray* 0.001), ray);
-
+    if ( !hit)
+        shade = 1.0;
 
     // float shadowAmount = hit? shadow(point, vec3(0.0, 1.0, 1.0)) : 1.0;
 	gl_FragColor = vec4(dist.y, float(iter)/float(MAX_ITER), abs(shade), 1.0);
