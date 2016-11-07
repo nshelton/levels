@@ -5,29 +5,29 @@
  * - dont rely on the browser doms
  * - super simple - you get it immediatly, no mistery, no magic involved
  *
- * - create a MicroEventDebug with goodies to debug
+ * - create a MicroEventDebug with goodies to debug 
  *   - make it safer to use
 */
 
-var MicroEvent  = function(){}
-MicroEvent.prototype  = {
-  bind  : function(event, fct){
-    this._events = this._events || {};
-    this._events[event] = this._events[event] || [];
-    this._events[event].push(fct);
-  },
-  unbind  : function(event, fct){
-    this._events = this._events || {};
-    if( event in this._events === false  )  return;
-    this._events[event].splice(this._events[event].indexOf(fct), 1);
-  },
-  trigger : function(event /* , args... */){
-    this._events = this._events || {};
-    if( event in this._events === false  )  return;
-    for(var i = 0; i < this._events[event].length; i++){
-      this._events[event][i].apply(this, Array.prototype.slice.call(arguments, 1))
-    }
-  }
+var MicroEvent	= function(){}
+MicroEvent.prototype	= {
+	bind	: function(event, fct){
+		this._events = this._events || {};
+		this._events[event] = this._events[event]	|| [];
+		this._events[event].push(fct);
+	},
+	unbind	: function(event, fct){
+		this._events = this._events || {};
+		if( event in this._events === false  )	return;
+		this._events[event].splice(this._events[event].indexOf(fct), 1);
+	},
+	trigger	: function(event /* , args... */){
+		this._events = this._events || {};
+		if( event in this._events === false  )	return;
+		for(var i = 0; i < this._events[event].length; i++){
+			this._events[event][i].apply(this, Array.prototype.slice.call(arguments, 1))
+		}
+	}
 };
 
 /**
@@ -37,16 +37,16 @@ MicroEvent.prototype  = {
  *
  * @param {Object} the object which will support MicroEvent
 */
-MicroEvent.mixin  = function(destObject){
-  var props = ['bind', 'unbind', 'trigger'];
-  for(var i = 0; i < props.length; i ++){
-    destObject.prototype[props[i]]  = MicroEvent.prototype[props[i]];
-  }
+MicroEvent.mixin	= function(destObject){
+	var props	= ['bind', 'unbind', 'trigger'];
+	for(var i = 0; i < props.length; i ++){
+		destObject.prototype[props[i]]	= MicroEvent.prototype[props[i]];
+	}
 }
 
 // export in common js
 if( typeof module !== "undefined" && ('exports' in module)){
-  module.exports  = MicroEvent
+	module.exports	= MicroEvent
 }/* 
  *  DSP.js - a comprehensive digital signal processing  library for javascript
  * 
@@ -696,7 +696,7 @@ RFFT.prototype.forward = function(buffer) {
     if (!window[i]) throw "Error: ThreeAudio requires " + deps[i];
   }
 })({
-  'THREE': 'Three.js',
+  // 'THREE': 'Three.js',
   'MicroEvent': 'MicroEvent.js',
 });
 
@@ -736,11 +736,11 @@ _.extend = _.extend || function (destination) {
 // Make microevent methods chainable.
 MicroEvent.prototype.on   = function () { MicroEvent.prototype.bind.apply(this, arguments);    return this; }
 MicroEvent.prototype.emit = function () { MicroEvent.prototype.trigger.apply(this, arguments); return this; }
-MicroEvent.mixin  = function(destObject){
-  var props = ['bind', 'unbind', 'trigger', 'on', 'emit'];
-  for(var i = 0; i < props.length; i ++){
-    destObject.prototype[props[i]]  = MicroEvent.prototype[props[i]];
-  }
+MicroEvent.mixin	= function(destObject){
+	var props	= ['bind', 'unbind', 'trigger', 'on', 'emit'];
+	for(var i = 0; i < props.length; i ++){
+		destObject.prototype[props[i]]	= MicroEvent.prototype[props[i]];
+	}
 }
 
 // Compatibility with ThreeRTT/ThreeBox
@@ -751,6 +751,8 @@ ThreeAudio.toTexture = function (texture) {
 // Math!
 var pi = Math.PI,
     tau = pi * 2;
+
+
 ThreeAudio.Source = function (options) {
   if (typeof options == 'number') {
     options = { fftSize: options };
@@ -768,10 +770,9 @@ ThreeAudio.Source = function (options) {
 
   this.processingDelay = 0;
 
-  if (!(AudioContext)) {
-    throw "Web Audio API not supported";
-  }
-  else {
+  if (!webkitAudioContext) {
+    alert("Web Audio API not supported");
+  } else {
     this.initElement(options.element);
   }
 }
@@ -779,7 +780,7 @@ ThreeAudio.Source = function (options) {
 ThreeAudio.Source.prototype = {
 
   initElement: function (element) {
-    var c = this.context = new (AudioContext)();
+    var c = this.context = new webkitAudioContext();
 
     // Create source
     if (element) {
@@ -809,14 +810,7 @@ ThreeAudio.Source.prototype = {
     this.inaudible = c.createDelay();
 
     // Wait for audio metadata before initializing analyzer
-    if (this.element.readyState >= 3) {
       this.initAnalyzer();
-    }
-    else {
-      this.element.addEventListener('canplay', function () {
-        this.initAnalyzer();
-      }.bind(this));
-    }
 
   },
 
@@ -899,11 +893,10 @@ ThreeAudio.Source.prototype = {
       filter.gainNode.connect(filter.analyser);
     });
 
-    // Create detectors
-    this.detectors = _.map(this.detectors, function (klass) {
-      console.log(_)
-      return (new klass(this.data));
-    }.bind(this));
+    // Create detectors (without )
+      this.detectors[0] = new this.detectors[0](this.data);
+      this.detectors[1] = new this.detectors[1](this.data);
+
   },
 
   update: function () {
@@ -935,18 +928,29 @@ ThreeAudio.Source.prototype = {
 
   mic: function (callback) {
     var c = this.context, inaudible = this.inaudible;
-    try {
-      navigator.getUserMedia({
-          audio: true
-        }, function (stream) {
-          // Create an AudioNode from the stream.
-          var mediaStreamSource = this.mediaStreamSource = c.createMediaStreamSource(stream);
-          mediaStreamSource.connect(inaudible);
+    
 
-        }, function (e) {
-          console.log("couldnt start mic", e)
-        } );
-    } catch (e) {  console.log("couldnt start mic", e)};
+    function hasGetUserMedia() {
+      return !!(navigator.getUserMedia || navigator.webkitGetUserMedia ||
+                navigator.mozGetUserMedia || navigator.msGetUserMedia);
+    }
+
+    if (hasGetUserMedia()) {
+      navigator.getUserMedia({
+            audio: true
+          }, function (stream) {
+            // Create an AudioNode from the stream.
+            var mediaStreamSource = this.mediaStreamSource = c.createMediaStreamSource(stream);
+            mediaStreamSource.connect(inaudible);
+
+            callback && callback();
+          },
+      function (e) { console.log(e); alert("You have webRTC, but there was an error getting the mic")} ) ;
+        } else {
+      alert('webRTC getUserMedia() is not supported in your browser. Use Chrome for Audio Reactivity!');
+    }
+
+
 
     return this;
   },
@@ -1060,7 +1064,7 @@ ThreeAudio.Material = function (audioTextures, vertexShader, fragmentShader, tex
       new Image(),
       new THREE.UVMapping(),
       THREE.ClampToEdgeWrapping,
-      THREE.ClampToEdgeWrapping,
+      THREE.RepeatWrapping,
       THREE.NearestFilter,
       THREE.NearestFilter
     );
@@ -1093,15 +1097,10 @@ ThreeAudio.Material = function (audioTextures, vertexShader, fragmentShader, tex
 
   // Lookup shaders and build material
   return new THREE.ShaderMaterial({
-    side:           THREE.DoubleSide,
     attributes:     attributes,
     uniforms:       uniforms,
     vertexShader:   ThreeAudio.getShader(vertexShader),
     fragmentShader: ThreeAudio.getShader(fragmentShader),
-    blending:THREE.AdditiveBlending,
-    depthWrite : false,
-    transparent : true,
-    side: THREE.DoubleSide
   });
 };
 ThreeAudio.Textures = function (renderer, source, history) {
@@ -1133,10 +1132,10 @@ ThreeAudio.Textures.prototype = {
 
       if (textures[key]) {
         gl.deleteTexture(textures[key]);
-        renderer.info.memory.textures--;
+  			renderer.info.memory.textures--;
       }
       t = textures[key] = gl.createTexture();
-      renderer.info.memory.textures++;
+			renderer.info.memory.textures++;
 
       gl.bindTexture(gl.TEXTURE_2D, t);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S,     gl.CLAMP_TO_EDGE);
@@ -1334,7 +1333,7 @@ ThreeAudio.LevelDetect.prototype.analyse = function () {
  *
  * Uses the levels of LevelDetect as input.
  */
-var __taDebug = false;
+var __taDebug = true;
 
 ThreeAudio.BeatDetect = function (data) {
   this.data = data;
@@ -1407,7 +1406,7 @@ ThreeAudio.BeatDetect.prototype = {
     this.t.className = 'ta-debug';
     this.t.width = 256;
     this.t.height = 200;
-    this.t.style.background = 'rgba(0,0,0,.3)';
+    this.t.style.background = 'rgba(1.0,0,0,.3)';
     this.t.style.color = '#fff';
     this.t.style.fontSize = '10px';
     this.t.style.position = 'absolute';

@@ -136,20 +136,22 @@ vec2 DE(vec3 p){
         p.yz = rot2D(p.yz, rot.x);
         p.zx = rot2D(p.zx, rot.y);
         
+        if ( absMirror > 0.5 ) {
+            p = abs(p);
+            
+            //mirrors
+            p.xy += step(p.x, p.y)*(p.yx - p.xy);
+            p.xz += step(p.x, p.z)*(p.zx - p.xz);
+            p.yz += step(p.y, p.z)*(p.zy - p.yz);
+            p=abs(p);
 
-        p = abs(p);
-        
-        //mirrors
-        p.xy += step(p.x, p.y)*(p.yx - p.xy);
-        p.xz += step(p.x, p.z)*(p.zx - p.xz);
-        p.yz += step(p.y, p.z)*(p.zy - p.yz);
-        p=abs(p);
+            // Stretching about an offset.
+            p = p*s + offs*(1. - s);
+            p -= step(p, offs*(1. - s)*.5)*offs*(1. - s);
 
-        // Stretching about an offset.
-        p = p*s + offs*(1. - s);
-        p -= step(p, offs*(1. - s)*.5)*offs*(1. - s);
+            p=abs(p);
+        }
 
-        p=abs(p);
         
         
         // d = min(d, (p.x+ p.y +p.z)*amp *0.5);

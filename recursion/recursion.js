@@ -8,20 +8,20 @@ var Uniforms = function() {
   this.rotationz        = 0.0;
   this.rotationx        = 0.0;
 
-  this.dimx             = 0.0;
-  this.dimy             = 0.0;
-  this.dimz             = 0.0;
+  this.dimx             = 50.0;
+  this.dimy             = 10.0;
+  this.dimz             = 1.0;
 
   this.translationx             = 0.0;
   this.translationy             = 0.0;
   this.translationz             = 0.0;
 
-  this.thickness        = 0.01;
-  this.palette          = 0.0;
-  this.ao               = 0.0;
+  this.thickness        = 0.1;
+  this.palette          = 0.26;
+  this.ao               = 0.8;
   this.shadow           = 0.0;
   this.scale            = 1.1;
-  this.iterCount        = 3;
+  this.iterCount        = 2;
   this.stepRatio        = 1;
 
 	this.time             = 1.0;
@@ -189,7 +189,7 @@ run = function(shaders) {
 		);
 
 
-    // shader_post.rgbShift.set(audio.data.levels.smooth[3] * uniforms.audioAmount)
+    shader_post.rgbShift.set(audio.data.levels.smooth[3] * uniforms.audioAmount)
 
     // shader_raymarch.thickness.set(Math.sin(lfo)* 0.25  + uniforms.thickness);
 
