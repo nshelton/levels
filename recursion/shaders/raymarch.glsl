@@ -156,7 +156,7 @@ vec2 DE(vec3 p){
         
         // d = min(d, (p.x+ p.y +p.z)*amp *0.5);
 
-        d = min(d, max(max(p.x, p.y), p.z)*amp);
+        d = max(-d, max(max(p.x, p.y), p.z)*amp);
         // d = min(d, max(max(p.x, p.y), p.z)*amp);
 
 
