@@ -70,8 +70,8 @@ function buildFBO(w, h, data) {
 	    depth: false,
 	    data: new Float32Array(data),
 		type: GL.FLOAT,
-		// minFilter: GL.NEAREST,
-		// magFilter: GL.NEAREST
+		minFilter: GL.LINEAR,
+		magFilter: GL.LINEAR
 	});
 };
 
