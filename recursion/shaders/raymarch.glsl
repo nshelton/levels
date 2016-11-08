@@ -86,7 +86,7 @@ float udBox( vec3 p, vec3 b )
 
 
 
-vec2 DE(vec3 p){
+vec2 DE2(vec3 p){
 
     // p *= inv(mat3(modelView)); 
     // p.yz = rot2D(p.yz, time);
@@ -193,9 +193,10 @@ vec3 opRep( vec3 p, vec3 c )
     return  mod(p,c)-0.5*c;
 }
 
-vec2 DE_new(vec3 p){
-    vec3 t = (modelView[3].xyz) * iterCount;
-    vec4 p_h = vec4(p, 1.0);
+vec2 DE(vec3 p){
+    vec3 t = (modelView[3].xyz);
+
+
     vec3 offs =  vec3(dimx, dimy, dimz);
 
     
@@ -207,20 +208,21 @@ vec2 DE_new(vec3 p){
     vec3 rot = vec3(rotationx, rotationy, rotationz);
 
     float d = 1e10;
-    // p_h.xyz -= p;
-    vec2 mask = vec2(-1.0, 1.0);
-    mat4 modelView_s = modelView;
+
+    mat3 modelView_s = inv(mat3(modelView));
 
 
     for (int i = 0; i < 10; i++){
         if( float(i) > iterCount)
           break;
 
-        p_h = (modelView_s * p_h);
-        p_h = abs(p_h);
+        p = (modelView_s * (p-t));
+        
+        if(absMirror>0.5)
+            p = abs(p);
 
 
-        d = min(d, udBox(p_h.xyz  , offs)) ;
+        d = min(d, udBox(p.xyz  , offs)) ;
 
         // d *= scale;
         // offs *= scale;
@@ -314,8 +316,8 @@ void main() {
     if ( !hit)
         shade = 1.0;
 
-    // float shadowAmount = hit? shadow(point, vec3(0.0, 1.0, 1.0)) : 1.0;
-    gl_FragColor = vec4(dist.y, float(iter)/float(MAX_ITER), abs(shade), 1.0);
+    float shadowAmount = hit? shadow(point, vec3(0.0, 1.0, 1.0)) : 1.0;
+    gl_FragColor = vec4(dist.y, float(iter)/float(MAX_ITER), abs(shade), shadowAmount);
 	// gl_FragColor = vec4(point, 1.0);
 
 }

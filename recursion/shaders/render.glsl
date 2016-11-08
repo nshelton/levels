@@ -41,7 +41,7 @@ void main()
 	// color *= scanline;
 
 
-	gl_FragColor = vec4(color * (ao +  (1.0 - p.y * (1.0 - ao))) * (shadow +  p.z * (1.0 - shadow)) , 1.0) ;
+	gl_FragColor = vec4(color * (ao +  (1.0 - p.y * (1.0 - ao))) * (shadow +  p.a * (1.0 - shadow)) , 1.0) ;
 	// gl_FragColor = vec4((p.xyz / 100.) , 1.0) ;
 
 }

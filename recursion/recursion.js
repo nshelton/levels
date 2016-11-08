@@ -129,19 +129,20 @@ run = function(shaders) {
 	scale = 2;
 	
 	var fbo_march 			= buildFBO(w/scale, h/scale);
-	var fbo_render			= buildFBO(w, h);
+  var fbo_render      = buildFBO(w, h);
 	var fbo_noise 			= buildFBO(w, h, genNoise(w,h));
 
-	 shader_raymarch		= buildShader("raymarch", [fbo_noise], shaders, uniforms, audio);
-	 shader_render 			= buildShader("render", [fbo_march, fbo_noise], shaders, uniforms, audio);
-	 shader_post 			  = buildShader("bloom", [fbo_render, fbo_noise], shaders, uniforms, audio);
+	shader_raymarch		  = buildShader("raymarch", [fbo_noise], shaders, uniforms, audio);
+	shader_render 			= buildShader("render", [fbo_march, fbo_noise], shaders, uniforms, audio);
+  shader_post         = buildShader("bloom", [fbo_render, fbo_noise], shaders, uniforms, audio);
+	shader_copy 			  = buildShader("copy", [fbo_render, fbo_noise], shaders, uniforms, audio);
 
   var time = 0.0;
 
   var rotDelta = new GLOW.Matrix4();
   rotDelta.setRotation(0.001, 0.001, 0.001);
   var rotMag = 0.0;
-  var rotateImpulse = false;
+  var rotateImpulse = true;
   var rotationDir ;
 
 
@@ -154,11 +155,12 @@ run = function(shaders) {
   var lfo = 0.0;
   var wait = 0.0;
 
+  var animate_audio = false;
 
   // ================ ===================
   var accumulator = 0;
   var beat = 0;
-  smoothBPM = 120;
+  smoothBPM = 5;
   startTime = Date.now() ;
 
 	function render() {
@@ -176,11 +178,6 @@ run = function(shaders) {
 
 		var t = controls.target;
 		var u = camera.up;
-
-
-    shader_raymarch.modelView.setRotation(uniforms.rotationx, uniforms.rotationy, uniforms.rotationz) ;
-    shader_raymarch.modelView.setPosition(uniforms.translationx, uniforms.translationy, uniforms.translationz) ;
-
 
 		shader_raymarch.camMat.setPosition(a.x, a.y, a.z);
 		shader_raymarch.camMat.lookAt(
@@ -218,22 +215,25 @@ run = function(shaders) {
     //   }
 
     // }
-
     if ( beat < 0.5) {
-      if(!rotateImpulse) {
-        rotationDir = new GLOW.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).setLength(0.0001);
-        // target = 
+      if(rotateImpulse) {
+        rotationDir = new GLOW.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
+        rotateImpulse = false;
+        console.log(rotationDir)
       }
-        rotmag = 1.0;
+        rotMag = 0.1 / uniforms.iterCount;
+        console.log('attack');
     } else {
-        rotmag = 0.1;
+        rotateImpulse = true;
+        rotMag = 0.001  / uniforms.iterCount;
+        console.log('decay');
     }
 
-    rotmag = Math.easeInOutQuart(beat, 0, 1, 1);
+    // rotmag = Math.easeInOutQuart(beat, 0, 1, 1);
       // setUniform(shader_raymarch, "rotationx",  last.rotationx, target.rotationx)
-      setUniform(shader_raymarch, "rotationx",  uniforms.rotationx + rotationDir.value[0] * rotmag)
-      setUniform(shader_raymarch, "rotationy",  uniforms.rotationy + rotationDir.value[1] * rotmag)
-      setUniform(shader_raymarch, "rotationz",  uniforms.rotationz + rotationDir.value[2] * rotmag)
+      setUniform(shader_raymarch, "rotationx",  uniforms.rotationx + rotationDir.value[0] * rotMag)
+      setUniform(shader_raymarch, "rotationy",  uniforms.rotationy + rotationDir.value[1] * rotMag)
+      setUniform(shader_raymarch, "rotationz",  uniforms.rotationz + rotationDir.value[2] * rotMag)
 
 
       uniforms.translationx = Math.sin(lfo/ 4.) * 10 + 10;
@@ -242,28 +242,35 @@ run = function(shaders) {
 
 
       // setUniform(shader_raymarch, "dimx",  Math.sin(lfo/ 4.) * 25 + 25);
-      setUniform(shader_raymarch, "dimy",  Math.sin(lfo/ 32.) * 25 + 25);
-      setUniform(shader_raymarch, "dimz",  Math.sin(lfo/ 64.) * 25 + 25);
+      // setUniform(shader_raymarch, "dimy",  Math.sin(lfo/ 32.) * 25 + 25);
+      // setUniform(shader_raymarch, "dimz",  Math.sin(lfo/ 64.) * 25 + 25);
 
     // nice n easy / constantv
     // transitionspeed = 1/128 * (audio.data.beat.bpm / 360);
 
 
 
+    shader_raymarch.modelView.setRotation(uniforms.rotationx, uniforms.rotationy, uniforms.rotationz) ;
+    shader_raymarch.modelView.setPosition(uniforms.translationx, uniforms.translationy, uniforms.translationz) ;
 
 
-    // if(audio.data.beat.is)
-      // alpha = 0.900;
-      var weight =  audio.data.beat.confidence * 0.001;
-    console.log( audio.data.beat.confidence, smoothBPM, lfo );
-    smoothBPM = audio.data.beat.bpm * weight + smoothBPM * (1.0 - weight);
+
+    if ( animate_audio) {
+        var weight =  audio.data.beat.confidence * 0.001;
+        smoothBPM = audio.data.beat.bpm * weight + smoothBPM * (1.0 - weight);
+    } 
 
     lfo =  (TWO_PI * time / 60) * smoothBPM;
-    beat = (lfo / 4) % 4; 
+    beat = (lfo) % 4; 
 
+
+
+
+    // now do all the rendering 
     shaderPass(context, shader_raymarch, fbo_march)
     shaderPass(context, shader_render, fbo_render)
 
+    
     shader_post.draw();
 
 	}
