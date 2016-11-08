@@ -16,12 +16,12 @@ var Uniforms = function() {
   this.translationy             = 0.0;
   this.translationz             = 0.0;
 
-  this.thickness        = 0.1;
+  this.thickness        = 0.2;
   this.palette          = 0.26;
   this.ao               = 0.8;
   this.shadow           = 0.0;
   this.scale            = 1.5;
-  this.iterCount        = 2;
+  this.iterCount        = 1;
   this.stepRatio        = 1;
 
 	this.time             = 1.0;
@@ -53,7 +53,7 @@ function setupUI(){
     uniforms = new Uniforms();
 
     gui = new dat.GUI();
-    gui.remember(uniforms);
+    // gui.remember(uniforms);
     gui.add(uniforms, "rotationx", 0, TWO_PI).onChange(function(value) { shader_raymarch.rotationx.set(value); }).listen();
     gui.add(uniforms, "rotationy", 0, TWO_PI).onChange(function(value) { shader_raymarch.rotationy.set(value); }).listen();
     gui.add(uniforms, "rotationz", 0,TWO_PI).onChange(function(value) { shader_raymarch.rotationz.set(value); }).listen();

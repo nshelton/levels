@@ -91,7 +91,7 @@ function init(context) {
 
 	controls = new THREE.TrackballControls(camera, context.domElement);
 	controls.target.set(0,0, 0);
-	camera.position.set(0,0, 50);
+	camera.position.set(0,0, 10);
 	controls.noZoom = false;
 	controls.noPan = false;
 
