@@ -8,7 +8,7 @@ var Uniforms = function() {
   this.rotationz        = 0.0;
   this.rotationx        = 0.0;
 
-  this.dimx             = 50.0;
+  this.dimx             = 10.0;
   this.dimy             = 10.0;
   this.dimz             = 1.0;
 
@@ -20,7 +20,7 @@ var Uniforms = function() {
   this.palette          = 0.26;
   this.ao               = 0.8;
   this.shadow           = 0.0;
-  this.scale            = 1.1;
+  this.scale            = 1.5;
   this.iterCount        = 2;
   this.stepRatio        = 1;
 
@@ -29,7 +29,7 @@ var Uniforms = function() {
 	this.height           = window.innerHeight;
 	this.shadeDelta   	  = 0.001;
   this.termThres        = 0.001;
-  this.audioAmount      = 1.0;
+  this.audioAmount      =  0.4;
   this.rgbShift         = 1.0;
 	this.absMirror		      = 1.0;
 };
@@ -70,7 +70,7 @@ function setupUI(){
 
     gui.add(uniforms, "thickness", 0, 1).onChange(function(value) { shader_raymarch.thickness.set(value); }).listen();
     gui.add(uniforms, "palette", 0, 2).step(1.0/15.0).onChange(function(value) { shader_render.palette.set(value); }).listen();
-    gui.add(uniforms, "scale", 0, 1.5).onChange(function(value) { shader_raymarch.scale.set(value); }).listen();
+    gui.add(uniforms, "scale", 1, 5).onChange(function(value) { shader_raymarch.scale.set(value); }).listen();
     gui.add(uniforms, "iterCount", 0, 8).step(1.0).onChange(function(value) { shader_raymarch.iterCount.set(value); }).listen();
     gui.add(uniforms, "stepRatio", 0, 1).onChange(function(value) { shader_raymarch.stepRatio.set(value); }).listen();
     gui.add(uniforms, "audioAmount", 0, 1).onChange(function(value) { shader_raymarch.audioAmount.set(value); }).listen();
