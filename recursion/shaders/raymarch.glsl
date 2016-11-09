@@ -90,7 +90,7 @@ float udBox( vec3 p, vec3 b )
 
 
 
-vec2 DE(vec3 p){
+vec2 DE0(vec3 p){
 
     // p *= inv(mat3(modelView)); 
     // p.yz = rot2D(p.yz, time);
@@ -197,9 +197,9 @@ vec3 opRep( vec3 p, vec3 c )
     return  mod(p,c)-0.5*c;
 }
 
-vec2 DE_new(vec3 p){
+vec2 DE(vec3 p){
     vec3 t = (modelView[3].xyz);
-
+    p += t;
 
     vec3 offs =  vec3(dimx, dimy, dimz);
 
@@ -215,19 +215,28 @@ vec2 DE_new(vec3 p){
 
     mat3 modelView_s = inv(mat3(modelView));
 
+    float s = 1.0;
 
     for (int i = 0; i < 10; i++){
         if( float(i) > iterCount)
           break;
 
-        p = (modelView_s * (p-t));
+        p = (modelView_s * (p-t/s));
         
+        if(absMirror>0.25)
+            p.x = abs(p.x);
+
         if(absMirror>0.5)
-            p = abs(p);
+            p.y = abs(p.y);
+
+        if(absMirror>0.75)
+            p.z = abs(p.z);
 
 
-        d = min(d, udBox(p.xyz  , offs)) ;
+        d = min(d, udBox(p.xyz*s  , offs)/s ) ;
+        // d = max(d, udBox(p.xyz*scale  , offs)/scale ) ;
 
+        s *= scale;
         // d *= scale;
         // offs *= scale;
         // modelView_s*=scale;
@@ -334,10 +343,8 @@ void main() {
     vec3 color = texture2D(colormap, vec2(fract(palette + 1.0/32.0), (color_param))).rgb;
 
     // vignette + noise
-    color *= vignette;
+    // color *= vignette;
     color += n_p.xxx / 7.;
-
-
 
 
     gl_FragColor = vec4(color * (ao +  (1.0 -fakeAO * (1.0 - ao))) * (shadow +  shadowAmount * (1.0 - shadow)) , 1.0) ;

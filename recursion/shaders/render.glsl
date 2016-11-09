@@ -10,6 +10,7 @@ uniform 	float 	time;
 uniform 	float 	palette;
 uniform 	float 	ao;
 uniform 	float 	shadow;
+uniform 	float 	gamma;
 
 uniform sampler2D audio_freq;
 uniform sampler2D audio_time;
@@ -42,6 +43,7 @@ void main()
 
 
 	gl_FragColor = vec4(color * (ao +  (1.0 - p.y * (1.0 - ao))) * (shadow +  p.a * (1.0 - shadow)) , 1.0) ;
+	gl_FragColor.rgb = pow(gl_FragColor.rgb, vec3(gamma));
 	// gl_FragColor = vec4((p.xyz / 100.) , 1.0) ;
 
 }

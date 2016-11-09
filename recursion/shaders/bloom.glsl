@@ -4,6 +4,7 @@ uniform 	float 	width;
 uniform 	float 	height;
 uniform 	float 	time;
 uniform 	float 	rgbShift;
+uniform 	float 	gamma;
 
 void main()
 {
@@ -22,6 +23,7 @@ void main()
 
 	gl_FragColor = total ; //pow(total, vec4(1.0/2.2));
 
+	gl_FragColor.rgb = pow(gl_FragColor.rgb, vec3(gamma));
 
 	// gl_FragColor = vec4(del.xy, 1.0, 1.0) ;
 

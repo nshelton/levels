@@ -54,3 +54,14 @@ http.createServer(function (request, response) {
 
 }).listen(8125);
 console.log('Server running at http://127.0.0.1:8125/');
+
+
+
+
+var osc = require('node-osc');
+
+var oscServer = new osc.Server(8000, '192.168.8.140'); // set this to the lemur IP in the app
+oscServer.on("message", function(msg, rinfo) {
+    console.log("TUIO message:");
+    console.log(msg);
+});
