@@ -140,7 +140,7 @@ run = function(shaders) {
 	var w = window.innerWidth;
 	var h = window.innerHeight;
 	scale = 2;
-	
+
 	// var fbo_march 			= buildFBO(w/scale, h/scale);
   var fbo_render      = buildFBO(w/scale, h/scale);
   var fbo_fxaa        = buildFBO(w, h);
@@ -188,7 +188,7 @@ run = function(shaders) {
     {
       syncAudio(shader_raymarch, audio);
       audio.update();
-    }  
+    }
 
 
     time = (Date.now() - startTime) / 1000;
@@ -261,13 +261,13 @@ run = function(shaders) {
         setUniform(shader_raymarch, "dimy",  uniforms.dimy + rotMag * Math.sin(lfo/ 32.));
         setUniform(shader_raymarch, "dimz",  uniforms.dimz + rotMag * Math.sin(lfo/ 64.)) ;
         // setUniform(shader_raymarch, "absMirror",  Math.sin(lfo/ 8.) * 0.5 + 0.5  ) ;
-        setUniform(shader_raymarch, "scale",  Math.sin(lfo/ 8.) * 0.25 + 1.25 ) ;
+        // setUniform(shader_raymarch, "scale",  Math.sin(lfo/ 8.) * 0.25 + 1.25 ) ;
 
       // nice n easy / constantv
       // transitionspeed = 1/128 * (audio.data.beat.bpm / 360);
 
     }
-  
+
       shader_raymarch.modelView.setRotation(uniforms.rotationx, uniforms.rotationy, uniforms.rotationz) ;
       shader_raymarch.modelView.setPosition(uniforms.translationx, uniforms.translationy, uniforms.translationz) ;
 
@@ -275,13 +275,13 @@ run = function(shaders) {
     if (uniforms.beatSync) {
         var weight =  audio.data.beat.confidence * 0.001;
         smoothBPM = audio.data.beat.bpm * weight + smoothBPM * (1.0 - weight);
-    } 
+    }
 
     lfo =  (TWO_PI * time / 60) * smoothBPM;
-    beat = (lfo/8.0) % 4; 
+    beat = (lfo/8.0) % 4;
 
 
-    // now do all the rendering 
+    // now do all the rendering
     shaderPass(context, shader_raymarch, fbo_render)
 
     // 3x fxaa is kind of whack, neeed to consolidate these maybe. Or just add a blur
@@ -289,7 +289,7 @@ run = function(shaders) {
     // shaderPass(context, shader_post2, fbo_fxaa_swap)
     // shaderPass(context, shader_post3, fbo_fxaa)
 
-    
+
     // shader_display.draw();
     shader_post.draw();
 
