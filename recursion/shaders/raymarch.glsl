@@ -29,6 +29,7 @@ vec2 rot2D (vec2 q, float a)
 }
 
 uniform	sampler2D 	source0; //noise
+uniform sampler2D   colormap; 
 uniform	float 		time;
 uniform	float 		mouseX;
 uniform	float 		mouseY;
@@ -48,12 +49,15 @@ uniform	float 		absMirror;
 
 uniform	float 		dimx;
 uniform	float 		dimy;
+uniform float       ao;
 uniform	float 		dimz;
 uniform	float 		thickness;
 uniform	float 		scale;
 uniform float       iterCount;
 uniform float       stepRatio;
-uniform	float 		audioAmount;
+uniform float       audioAmount;
+uniform float       palette;
+uniform float       shadow;
 
 // THREE AUdio=================================
 uniform	sampler2D 	audio_time; 
@@ -194,8 +198,9 @@ vec3 opRep( vec3 p, vec3 c )
 }
 
 vec2 DE_new(vec3 p){
-    vec3 t = (modelView[3].xyz) * iterCount;
-    vec4 p_h = vec4(p, 1.0);
+    vec3 t = (modelView[3].xyz);
+
+
     vec3 offs =  vec3(dimx, dimy, dimz);
 
     
@@ -207,20 +212,21 @@ vec2 DE_new(vec3 p){
     vec3 rot = vec3(rotationx, rotationy, rotationz);
 
     float d = 1e10;
-    // p_h.xyz -= p;
-    vec2 mask = vec2(-1.0, 1.0);
-    mat4 modelView_s = modelView;
+
+    mat3 modelView_s = inv(mat3(modelView));
 
 
     for (int i = 0; i < 10; i++){
         if( float(i) > iterCount)
           break;
 
-        p_h = (modelView_s * p_h);
-        p_h = abs(p_h);
+        p = (modelView_s * (p-t));
+        
+        if(absMirror>0.5)
+            p = abs(p);
 
 
-        d = min(d, udBox(p_h.xyz  , offs)) ;
+        d = min(d, udBox(p.xyz  , offs)) ;
 
         // d *= scale;
         // offs *= scale;
@@ -248,9 +254,9 @@ vec3 gradient(vec3 p) {
 	);
 }					
 
-float shadow( in vec3 ro, in vec3 rd)
+float de_shadow( in vec3 ro, in vec3 rd)
 {
-    float t = 0.1;
+    float t = 0.05;
     float res = 1.0;
     float k = 1.0;
 
@@ -279,12 +285,16 @@ void main() {
     bool hit = false;
 
 
-    float r_scale = 2.0;
+    float r_scale = 2.;
 
 	vec3 ray = vec3(2.*gl_FragCoord.xy - vec2(width, height)/r_scale, height/r_scale);
 	vec4 n = texture2D(source0, fract(ray.xy * time/2.));
     vec2 jitter = (n.xy - 0.5) * 2.;
 	ray = normalize(vec3(ray.xy + jitter, -sqrt(max(ray.z*ray.z - dot(ray.xy, ray.xy)*.2, 0.))));
+
+    // use the ray before we transform it for screen space things
+    float vignette = 1.0 - length(ray.xy);
+    vec4 n_p = texture2D(source0, fract(ray.xy + time*10.)) - 0.5;
 
 
 	mat3 r = inv(mat3(camMat));
@@ -310,12 +320,26 @@ void main() {
         iter ++;
     }
     
-    float shade = dot(gradient(point - ray* 0.001), ray);
-    if ( !hit)
-        shade = 1.0;
+    // float shade = dot(gradient(point - ray* 0.001), ray);
+    // if ( !hit)
+        // shade = 1.0;
 
-    // float shadowAmount = hit? shadow(point, vec3(0.0, 1.0, 1.0)) : 1.0;
-    gl_FragColor = vec4(dist.y, float(iter)/float(MAX_ITER), abs(shade), 1.0);
-	// gl_FragColor = vec4(point, 1.0);
+    float shadowAmount = (hit && shadow < 1.0 )? de_shadow(point, vec3(0.0, 1.0, 1.0)) : 1.0;
+
+    // now do the shading instead of putting this in a different shader
+    float fakeAO = float(iter)/float(MAX_ITER);
+
+    // basic color
+    float color_param = (palette >= 1.0) ?  fakeAO : 1.0 - fakeAO;
+    vec3 color = texture2D(colormap, vec2(fract(palette + 1.0/32.0), (color_param))).rgb;
+
+    // vignette + noise
+    color *= vignette;
+    color += n_p.xxx / 7.;
+
+
+
+
+    gl_FragColor = vec4(color * (ao +  (1.0 -fakeAO * (1.0 - ao))) * (shadow +  shadowAmount * (1.0 - shadow)) , 1.0) ;
 
 }
