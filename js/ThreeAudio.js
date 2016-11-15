@@ -1,11 +1,11 @@
 /**
  * MicroEvent - to make any js object an event emitter (server or browser)
- * 
+ *
  * - pure javascript - server compatible, browser compatible
  * - dont rely on the browser doms
  * - super simple - you get it immediatly, no mistery, no magic involved
  *
- * - create a MicroEventDebug with goodies to debug 
+ * - create a MicroEventDebug with goodies to debug
  *   - make it safer to use
 */
 
@@ -47,9 +47,9 @@ MicroEvent.mixin	= function(destObject){
 // export in common js
 if( typeof module !== "undefined" && ('exports' in module)){
 	module.exports	= MicroEvent
-}/* 
+}/*
  *  DSP.js - a comprehensive digital signal processing  library for javascript
- * 
+ *
  *  Created by Corban Brook <corbanbrook@gmail.com> on 2010-01-01.
  *  Copyright 2010 Corban Brook. All rights reserved.
  *
@@ -132,7 +132,7 @@ function FourierTransform(bufferSize, sampleRate) {
         imag      = this.imag,
         bSi       = 2 / this.bufferSize,
         sqrt      = Math.sqrt,
-        rval, 
+        rval,
         ival,
         mag;
 
@@ -183,7 +183,7 @@ function DFT(bufferSize, sampleRate) {
  * @returns The frequency spectrum array
  */
 DFT.prototype.forward = function(buffer) {
-  var real = this.real, 
+  var real = this.real,
       imag = this.imag,
       rval,
       ival;
@@ -216,7 +216,7 @@ DFT.prototype.forward = function(buffer) {
  */
 function FFT(bufferSize, sampleRate) {
   FourierTransform.call(this, bufferSize, sampleRate);
-   
+
   this.reverseTable = new Uint32Array(bufferSize);
 
   var limit = 1;
@@ -286,7 +286,7 @@ FFT.prototype.forward = function(buffer) {
     //phaseShiftStepImag = Math.sin(-Math.PI/halfSize);
     phaseShiftStepReal = cosTable[halfSize];
     phaseShiftStepImag = sinTable[halfSize];
-    
+
     currentPhaseShiftReal = 1;
     currentPhaseShiftImag = 0;
 
@@ -324,7 +324,7 @@ FFT.prototype.inverse = function(real, imag) {
       sinTable        = this.sinTable,
       reverseTable    = this.reverseTable,
       spectrum        = this.spectrum;
-     
+
       real = real || this.real;
       imag = imag || this.imag;
 
@@ -345,12 +345,12 @@ FFT.prototype.inverse = function(real, imag) {
 
   var revReal = new Float32Array(bufferSize);
   var revImag = new Float32Array(bufferSize);
- 
+
   for (i = 0; i < real.length; i++) {
     revReal[i] = real[reverseTable[i]];
     revImag[i] = imag[reverseTable[i]];
   }
- 
+
   real = revReal;
   imag = revImag;
 
@@ -424,9 +424,9 @@ function RFFT(bufferSize, sampleRate) {
 
   // don't use a lookup table to do the permute, use this instead
   this.reverseBinPermute = function (dest, source) {
-    var bufferSize  = this.bufferSize, 
-        halfSize    = bufferSize >>> 1, 
-        nm1         = bufferSize - 1, 
+    var bufferSize  = this.bufferSize,
+        halfSize    = bufferSize >>> 1,
+        nm1         = bufferSize - 1,
         i = 1, r = 0, h;
 
     dest[0] = source[0];
@@ -435,17 +435,17 @@ function RFFT(bufferSize, sampleRate) {
       r += halfSize;
       dest[i] = source[r];
       dest[r] = source[i];
-      
+
       i++;
 
       h = halfSize << 1;
       while (h = h >> 1, !((r ^= h) & h));
 
-      if (r >= i) { 
-        dest[i]     = source[r]; 
+      if (r >= i) {
+        dest[i]     = source[r];
         dest[r]     = source[i];
 
-        dest[nm1-i] = source[nm1-r]; 
+        dest[nm1-i] = source[nm1-r];
         dest[nm1-r] = source[nm1-i];
       }
       i++;
@@ -454,16 +454,16 @@ function RFFT(bufferSize, sampleRate) {
   };
 
   this.generateReverseTable = function () {
-    var bufferSize  = this.bufferSize, 
-        halfSize    = bufferSize >>> 1, 
-        nm1         = bufferSize - 1, 
+    var bufferSize  = this.bufferSize,
+        halfSize    = bufferSize >>> 1,
+        nm1         = bufferSize - 1,
         i = 1, r = 0, h;
 
     this.reverseTable[0] = 0;
 
     do {
       r += halfSize;
-      
+
       this.reverseTable[i] = r;
       this.reverseTable[r] = i;
 
@@ -472,7 +472,7 @@ function RFFT(bufferSize, sampleRate) {
       h = halfSize << 1;
       while (h = h >> 1, !((r ^= h) & h));
 
-      if (r >= i) { 
+      if (r >= i) {
         this.reverseTable[i] = r;
         this.reverseTable[r] = i;
 
@@ -500,23 +500,23 @@ function RFFT(bufferSize, sampleRate) {
 // trans[n/2+1] = im[n/2-1]
 // trans[n/2+2] = im[n/2-2]
 //             ...
-// trans[n-1]   = im[1] 
+// trans[n-1]   = im[1]
 
 RFFT.prototype.forward = function(buffer) {
-  var n         = this.bufferSize, 
+  var n         = this.bufferSize,
       spectrum  = this.spectrum,
-      x         = this.trans, 
+      x         = this.trans,
       TWO_PI    = 2*Math.PI,
       sqrt      = Math.sqrt,
       i         = n >>> 1,
       bSi       = 2 / n,
-      n2, n4, n8, nn, 
-      t1, t2, t3, t4, 
-      i1, i2, i3, i4, i5, i6, i7, i8, 
+      n2, n4, n8, nn,
+      t1, t2, t3, t4,
+      i1, i2, i3, i4, i5, i6, i7, i8,
       st1, cc1, ss1, cc3, ss3,
-      e, 
+      e,
       a,
-      rval, ival, mag; 
+      rval, ival, mag;
 
   this.reverseBinPermute(x, buffer);
 
@@ -534,7 +534,7 @@ RFFT.prototype.forward = function(buffer) {
       st1 = x[i0] - x[i0+1];
       x[i0] += x[i0+1];
       x[i0+1] = st1;
-    } 
+    }
     ix = 2*(id-1);
   }
 
@@ -554,31 +554,31 @@ RFFT.prototype.forward = function(buffer) {
           i2 = i1 + n4;
           i3 = i2 + n4;
           i4 = i3 + n4;
-     
+
           //diffsum3_r(x[i3], x[i4], t1); // {a, b, s} <--| {a, b-a, a+b}
           t1 = x[i3] + x[i4];
           x[i4] -= x[i3];
           //sumdiff3(x[i1], t1, x[i3]);   // {a, b, d} <--| {a+b, b, a-b}
-          x[i3] = x[i1] - t1; 
+          x[i3] = x[i1] - t1;
           x[i1] += t1;
-     
+
           i1 += n8;
           i2 += n8;
           i3 += n8;
           i4 += n8;
-         
+
           //sumdiff(x[i3], x[i4], t1, t2); // {s, d}  <--| {a+b, a-b}
           t1 = x[i3] + x[i4];
           t2 = x[i3] - x[i4];
-         
+
           t1 = -t1 * Math.SQRT1_2;
           t2 *= Math.SQRT1_2;
-     
+
           // sumdiff(t1, x[i2], x[i4], x[i3]); // {s, d}  <--| {a+b, a-b}
           st1 = x[i2];
-          x[i4] = t1 + st1; 
+          x[i4] = t1 + st1;
           x[i3] = t1 - st1;
-          
+
           //sumdiff3(x[i1], t2, x[i2]); // {a, b, d} <--| {a+b, b, a-b}
           x[i2] = x[i1] - t2;
           x[i1] += t2;
@@ -589,21 +589,21 @@ RFFT.prototype.forward = function(buffer) {
           i2 = i1 + n4;
           i3 = i2 + n4;
           i4 = i3 + n4;
-     
+
           //diffsum3_r(x[i3], x[i4], t1); // {a, b, s} <--| {a, b-a, a+b}
-          t1 = x[i3] + x[i4]; 
+          t1 = x[i3] + x[i4];
           x[i4] -= x[i3];
-          
+
           //sumdiff3(x[i1], t1, x[i3]);   // {a, b, d} <--| {a+b, b, a-b}
-          x[i3] = x[i1] - t1; 
+          x[i3] = x[i1] - t1;
           x[i1] += t1;
         }
       }
-   
+
       ix = (id << 1) - n2;
       id = id << 2;
     } while (ix < n);
- 
+
     e = TWO_PI / n2;
 
     for (var j = 1; j < n8; j++) {
@@ -614,7 +614,7 @@ RFFT.prototype.forward = function(buffer) {
       //ss3 = sin(3*a); cc3 = cos(3*a);
       cc3 = 4*cc1*(cc1*cc1-0.75);
       ss3 = 4*ss1*(0.75-ss1*ss1);
-   
+
       ix = 0; id = n2 << 1;
       do {
         for (i0 = ix; i0 < n; i0 += id) {
@@ -622,53 +622,53 @@ RFFT.prototype.forward = function(buffer) {
           i2 = i1 + n4;
           i3 = i2 + n4;
           i4 = i3 + n4;
-       
+
           i5 = i0 + n4 - j;
           i6 = i5 + n4;
           i7 = i6 + n4;
           i8 = i7 + n4;
-       
+
           //cmult(c, s, x, y, &u, &v)
           //cmult(cc1, ss1, x[i7], x[i3], t2, t1); // {u,v} <--| {x*c-y*s, x*s+y*c}
-          t2 = x[i7]*cc1 - x[i3]*ss1; 
+          t2 = x[i7]*cc1 - x[i3]*ss1;
           t1 = x[i7]*ss1 + x[i3]*cc1;
-          
+
           //cmult(cc3, ss3, x[i8], x[i4], t4, t3);
-          t4 = x[i8]*cc3 - x[i4]*ss3; 
+          t4 = x[i8]*cc3 - x[i4]*ss3;
           t3 = x[i8]*ss3 + x[i4]*cc3;
-       
+
           //sumdiff(t2, t4);   // {a, b} <--| {a+b, a-b}
           st1 = t2 - t4;
           t2 += t4;
           t4 = st1;
-          
+
           //sumdiff(t2, x[i6], x[i8], x[i3]); // {s, d}  <--| {a+b, a-b}
           //st1 = x[i6]; x[i8] = t2 + st1; x[i3] = t2 - st1;
-          x[i8] = t2 + x[i6]; 
+          x[i8] = t2 + x[i6];
           x[i3] = t2 - x[i6];
-         
+
           //sumdiff_r(t1, t3); // {a, b} <--| {a+b, b-a}
           st1 = t3 - t1;
           t1 += t3;
           t3 = st1;
-          
+
           //sumdiff(t3, x[i2], x[i4], x[i7]); // {s, d}  <--| {a+b, a-b}
           //st1 = x[i2]; x[i4] = t3 + st1; x[i7] = t3 - st1;
-          x[i4] = t3 + x[i2]; 
+          x[i4] = t3 + x[i2];
           x[i7] = t3 - x[i2];
-         
+
           //sumdiff3(x[i1], t1, x[i6]);   // {a, b, d} <--| {a+b, b, a-b}
-          x[i6] = x[i1] - t1; 
+          x[i6] = x[i1] - t1;
           x[i1] += t1;
-          
+
           //diffsum3_r(t4, x[i5], x[i2]); // {a, b, s} <--| {a, b-a, a+b}
-          x[i2] = t4 + x[i5]; 
+          x[i2] = t4 + x[i5];
           x[i5] -= t4;
         }
-     
+
         ix = (id << 1) - n2;
         id = id << 2;
-   
+
       } while (ix < n);
     }
   }
@@ -928,7 +928,7 @@ ThreeAudio.Source.prototype = {
 
   mic: function (callback) {
     var c = this.context, inaudible = this.inaudible;
-    
+
 
     function hasGetUserMedia() {
       return !!(navigator.getUserMedia || navigator.webkitGetUserMedia ||
@@ -1189,7 +1189,7 @@ ThreeAudio.Textures.prototype = {
         beat = this.data.beat;
     return {
       audioIsBeat:       beat && beat.is || 0,
-      audioWasBeat:      beat && beat.was || 0, 
+      audioWasBeat:      beat && beat.was || 0,
       audioLevels:       levels && levels.direct || 0,
       audioLevelsSmooth: levels && levels.smooth || 0,
       audioLevelsChange: levels && levels.change || 0,
@@ -1333,7 +1333,7 @@ ThreeAudio.LevelDetect.prototype.analyse = function () {
  *
  * Uses the levels of LevelDetect as input.
  */
-var __taDebug = false;
+var __taDebug = true;
 
 ThreeAudio.BeatDetect = function (data) {
   this.data = data;

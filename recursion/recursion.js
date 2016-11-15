@@ -31,7 +31,8 @@ var Uniforms = function() {
   this.termThres        = 0.001;
   this.audioAmount      =  0.4;
   this.rgbShift         = 1.0;
-	this.absMirror		    = 1.0;
+  this.absMirror        = 1.0;
+	this.gamma     		    = 1.0;
 
   this.beatSync    = true;
   this.automate    = true;
@@ -70,22 +71,23 @@ function setupUI(){
     f1.add(uniforms, "dimz", 0, 50).onChange(function(value) { shader_raymarch.dimz.set(value); }).listen();
 
 
-    f1.add(uniforms, "translationx", -50, 50).listen();
-    f1.add(uniforms, "translationy", -50, 50).listen();
-    f1.add(uniforms, "translationz", -50, 50).listen();
+    f1.add(uniforms, "translationx", 0, 50).listen();
+    f1.add(uniforms, "translationy", 0, 50).listen();
+    f1.add(uniforms, "translationz", 0, 50).listen();
     f1.add(uniforms, "thickness", 0, 1).onChange(function(value) { shader_raymarch.thickness.set(value); }).listen();
     f1.add(uniforms, "scale", 1, 5).onChange(function(value) { shader_raymarch.scale.set(value); }).listen();
 
     var f2 = gui.addFolder('Render');
 
     f2.add(uniforms, "palette", 0, 2).step(1.0/15.0).onChange(function(value) { shader_raymarch.palette.set(value); }).listen();
-    f2.add(uniforms, "iterCount", 1, 4).step(1.0).onChange(function(value) { shader_raymarch.iterCount.set(value); }).listen();
+    f2.add(uniforms, "iterCount", 1, 8).step(1.0).onChange(function(value) { shader_raymarch.iterCount.set(value); }).listen();
     // f2.add(uniforms, "stepRatio", 0, 1).onChange(function(value) { shader_raymarch.stepRatio.set(value); }).listen();
     f2.add(uniforms, "audioAmount", 0, 1).onChange(function(value) { shader_raymarch.audioAmount.set(value); }).listen();
 
     f2.add(uniforms, "ao", 0, 1).step(0.1).onChange(function(value) { shader_raymarch.ao.set(value); }).listen();
     f2.add(uniforms, "shadow", 0, 1).step(0.1).onChange(function(value) { shader_raymarch.shadow.set(value); }).listen();
-    // gui.add(uniforms, "absMirror", 0, 1).onChange(function(value) { shader_raymarch.absMirror.set(value); }).listen();
+    f2.add(uniforms, "gamma", 0.5, 3).onChange(function(value) { shader_display.gamma.set(value); }).listen();
+    gui.add(uniforms, "absMirror", 0, 1).onChange(function(value) { shader_raymarch.absMirror.set(value); }).listen();
     gui.add(uniforms, "beatSync");
     gui.add(uniforms, "automate");
 }
@@ -138,7 +140,7 @@ run = function(shaders) {
 	var w = window.innerWidth;
 	var h = window.innerHeight;
 	scale = 2;
-	
+
 	// var fbo_march 			= buildFBO(w/scale, h/scale);
   var fbo_render      = buildFBO(w/scale, h/scale);
   var fbo_fxaa        = buildFBO(w, h);
@@ -148,7 +150,9 @@ run = function(shaders) {
 	shader_raymarch		  = buildShader("raymarch", [fbo_noise], shaders, uniforms, audio);
 	// shader_render 			= buildShader("render", [fbo_march, fbo_noise], shaders, uniforms, audio);
   shader_post         = buildShader("fxaa", [fbo_render], shaders, uniforms, audio);
-  shader_post2        = buildShader("fxaa", [fbo_fxaa_swap], shaders, uniforms, audio);
+  shader_post2        = buildShader("fxaa", [fbo_fxaa], shaders, uniforms, audio);
+  shader_post3        = buildShader("fxaa", [fbo_fxaa_swap], shaders, uniforms, audio);
+  shader_display        = buildShader("bloom", [fbo_fxaa], shaders, uniforms, audio);
 	// shader_copy 	    = buildShader("copy", [fbo_render, fbo_noise], shaders, uniforms, audio);
 
   var time = 0.0;
@@ -166,22 +170,26 @@ run = function(shaders) {
   var nextPreset = randomPreset(lastPreset, 0);
   var alpha = 0.0;
   var transitionspeed = 0.001;
-  var lfo = 0.0;
+   lfo = 0.0;
   var wait = 0.0;
 
 
   // ================ ===================
   var accumulator = 0;
-  var beat = 0;
-  smoothBPM = 120;
+  beat = 0;
+  smoothBPM = 12;
   startTime = Date.now() ;
 
 	function render() {
 
 		controls.update();
     stats.update();
-    audio.update();
-    syncAudio(shader_raymarch, audio);
+    if(uniforms.beatSync)
+    {
+      syncAudio(shader_raymarch, audio);
+      audio.update();
+    }
+
 
     time = (Date.now() - startTime) / 1000;
     // beat = audio.data.beat.bpm;
@@ -222,7 +230,7 @@ run = function(shaders) {
         } else if (t < t_decay) {
           return 0.001
         } else {
-          return 0
+          return 0.001
         }
       }
 
@@ -235,7 +243,7 @@ run = function(shaders) {
           rotateImpulse = true;
       }
 
-      rotMag = envelope(beat);
+      rotMag = 0.01; //envelope(beat);
 
       // rotmag = Math.easeInOutQuart(beat, 0, 1, 1);
         // setUniform(shader_raymarch, "rotationx",  last.rotationx, target.rotationx)
@@ -244,41 +252,45 @@ run = function(shaders) {
         setUniform(shader_raymarch, "rotationz",  uniforms.rotationz + rotationDir.value[2] * rotMag)
 
 
-        uniforms.translationx = Math.sin(lfo/ 4.) * 10 + 10;
-        uniforms.translationy = Math.sin(lfo/ 8.) * 10 + 10;
-        uniforms.translationz = Math.sin(lfo/ 2.)  * 10 + 10;
+        uniforms.translationx += Math.sin(lfo/ 12.) * rotMag;
+        uniforms.translationy += Math.sin(lfo/ 18.) * rotMag;
+        uniforms.translationz += Math.sin(lfo/ 24.) * rotMag
 
 
         // setUniform(shader_raymarch, "dimx",  Math.sin(lfo/ 4.) * 25 + 25);
-        setUniform(shader_raymarch, "dimy",  Math.sin(lfo/ 32.) * uniforms.dimx + uniforms.dimx);
-        setUniform(shader_raymarch, "dimz",  Math.sin(lfo/ 64.) * uniforms.dimx + uniforms.dimx);
+        setUniform(shader_raymarch, "dimy",  uniforms.dimy + rotMag * Math.sin(lfo/ 32.));
+        setUniform(shader_raymarch, "dimz",  uniforms.dimz + rotMag * Math.sin(lfo/ 64.)) ;
+        // setUniform(shader_raymarch, "absMirror",  Math.sin(lfo/ 8.) * 0.5 + 0.5  ) ;
+        // setUniform(shader_raymarch, "scale",  Math.sin(lfo/ 8.) * 0.25 + 1.25 ) ;
 
       // nice n easy / constantv
       // transitionspeed = 1/128 * (audio.data.beat.bpm / 360);
 
+    }
+
       shader_raymarch.modelView.setRotation(uniforms.rotationx, uniforms.rotationy, uniforms.rotationz) ;
       shader_raymarch.modelView.setPosition(uniforms.translationx, uniforms.translationy, uniforms.translationz) ;
-    }
-  
 
 
     if (uniforms.beatSync) {
         var weight =  audio.data.beat.confidence * 0.001;
         smoothBPM = audio.data.beat.bpm * weight + smoothBPM * (1.0 - weight);
-    } 
+    }
 
     lfo =  (TWO_PI * time / 60) * smoothBPM;
-    beat = (lfo/8.0) % 4; 
+    beat = (lfo/8.0) % 4;
 
 
-    // now do all the rendering 
+    // now do all the rendering
     shaderPass(context, shader_raymarch, fbo_render)
 
     // 3x fxaa is kind of whack, neeed to consolidate these maybe. Or just add a blur
     shaderPass(context, shader_post, fbo_fxaa)
-    shaderPass(context, shader_post2, fbo_fxaa_swap)
+    // shaderPass(context, shader_post2, fbo_fxaa_swap)
+    // shaderPass(context, shader_post3, fbo_fxaa)
 
-    
+
+    // shader_display.draw();
     shader_post.draw();
 
 	}
