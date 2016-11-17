@@ -1333,7 +1333,7 @@ ThreeAudio.LevelDetect.prototype.analyse = function () {
  *
  * Uses the levels of LevelDetect as input.
  */
-var __taDebug = true;
+var __taDebug = false;
 
 ThreeAudio.BeatDetect = function (data) {
   this.data = data;

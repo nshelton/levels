@@ -141,17 +141,18 @@ function syncAudio(shader, audio) {
 
 }
 
-function setPreset(preset0, preset1, alpha, uniforms, gui)
+function setPreset(preset0, preset1, alpha, uniforms, folders)
 {
-	var controllers = gui.__controllers;
-	for (var i = 0; i < controllers.length; i ++) {
-
-		var name = controllers[i].property;
-
-		if (preset0[name] && preset1[name]) {
-			// LERP
-			uniforms[name] = alpha * preset0[name] + (1.0 - alpha) * preset1[name];
-			controllers[i].setValue(uniforms[name]);
+	for(var j = 0; j < folders.length; j++) {
+		var controllers = folders[j].__controllers;
+		for (var i = 0; i < controllers.length; i ++) {
+			var name = controllers[i].property;
+			if (preset0[name] && preset1[name]) {
+				// LERP
+				uniforms[name] = alpha * preset0[name] + (1.0 - alpha) * preset1[name];
+				controllers[i].setValue(uniforms[name]);
+			}
 		}
 	}
+	
 }

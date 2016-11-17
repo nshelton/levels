@@ -47,15 +47,16 @@ uniform	float 		rotationy;
 uniform float     rotationz;
 uniform	float 		absMirror;
 
-uniform	float 		dimx;
-uniform	float 		dimy;
+uniform	float     dimx;
+uniform	float     dimy;
 uniform float     ao;
-uniform	float 		dimz;
-uniform	float 		thickness;
-uniform	float 		scale;
+uniform	float     dimz;
+uniform	float     thickness;
+uniform	float     scale;
 uniform float     iterCount;
 uniform float     stepRatio;
 uniform float     audioAmount;
+uniform float     audioScale;
 uniform float     palette;
 uniform float     shadow;
 
@@ -199,7 +200,6 @@ vec3 opRep( vec3 p, vec3 c )
 
 vec2 DE(vec3 p){
     vec3 t = (modelView[3].xyz);
-    p += t;
 
     vec3 offs =  vec3(dimx, dimy, dimz);
 
@@ -217,6 +217,13 @@ vec2 DE(vec3 p){
 
     float s = 1.0;
 
+    float index = length(p)/(max(max(dimx, dimy), dimz) * iterCount);
+    index*= audioScale;
+    float freq = texture2D(audio_freq, vec2(index, 0.5)).a;
+    freq = (audioAmount == 0.0) ? 0.0 : audioAmount *  pow(freq, 2.0);
+
+    p += t;
+
     for (int i = 0; i < 10; i++){
         if( float(i) > iterCount)
           break;
@@ -232,10 +239,12 @@ vec2 DE(vec3 p){
         if(absMirror>0.75)
             p.z = abs(p.z);
 
+        d = min	(d, udBox(p.xyz*s, offs + freq  )/s ) ;
 
-        d = min	(d, udBox(p.xyz*s  , offs)/s ) ;
+        d = min(d, length(p - t) - 5.0 );
 
-				d = min(d, length(p - t) - 1.0 );
+        freq *=scale;
+
 
         // d = max(d, udBox(p.xyz*scale  , offs)/scale ) ;
 
@@ -284,7 +293,7 @@ float de_shadow( in vec3 ro, in vec3 rd)
     return res;
 }
 
-#define MAX_ITER 40
+#define MAX_ITER 100
 
 #define PI 3.1415
 
