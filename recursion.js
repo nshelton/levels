@@ -20,7 +20,7 @@ var Uniforms = function() {
   this.thickness        = 0.2;
   this.palette          = 0.26;
   this.ao               = 0.8;
-  this.shadow           = 0.2;
+  // this.shadow           = 0.2;
   this.scale            = 2.0;
   this.iterCount        = 1;
   this.stepRatio        = 1;
@@ -34,6 +34,7 @@ var Uniforms = function() {
   this.audioScale       =  0.4;
   this.rgbShift         = 1.0;
   this.absMirror        = 1.0;
+  this.circleSize       = 5.0;
 
   this.beatSync    = true;
   this.automate    = 1;
@@ -93,7 +94,7 @@ function setupUI(){
     f2.add(uniforms, "stepRatio", 0, 1).onChange(function(value) { shader_raymarch.stepRatio.set(value); }).listen();
     
     f2.add(uniforms, "ao", 0, 1).step(0.1).onChange(function(value) { shader_raymarch.ao.set(value); }).listen();
-    f2.add(uniforms, "shadow", 0, 1).step(0.1).onChange(function(value) { shader_raymarch.shadow.set(value); }).listen();
+    // f2.add(uniforms, "shadow", 0, 1).step(0.1).onChange(function(value) { shader_raymarch.shadow.set(value); }).listen();
    
     f3 = gui.addFolder('Camera');
     f3.add(uniforms, "camX",-500, 500).onChange(function(value) { camera.position.x = value; }).listen();
@@ -103,6 +104,7 @@ function setupUI(){
 
 
     gui.add(uniforms, "absMirror", 0, 1).onChange(function(value) { shader_raymarch.absMirror.set(value); }).listen();
+    gui.add(uniforms, "circleSize", 0, 10).onChange(function(value) { shader_raymarch.circleSize.set(value); }).listen();
     // gui.add(uniforms, "animationSpeed", 0, 1).onChange(function(value) { shader_raymarch.absMirror.set(value); }).listen();
     gui.add(uniforms, "beatSync");
     gui.add(uniforms, "automate", 1, 5);
@@ -155,7 +157,7 @@ run = function(shaders) {
 
 	var w = window.innerWidth;
 	var h = window.innerHeight;
-	scale = 2;
+	scale = 3;
 
 	// var fbo_march 			= buildFBO(w/scale, h/scale);
   var fbo_render      = buildFBO(w/scale, h/scale);
@@ -168,7 +170,7 @@ run = function(shaders) {
   shader_post         = buildShader("fxaa", [fbo_render], shaders, uniforms, audio);
   shader_post2        = buildShader("fxaa", [fbo_fxaa], shaders, uniforms, audio);
   shader_post3        = buildShader("fxaa", [fbo_fxaa_swap], shaders, uniforms, audio);
-  shader_display        = buildShader("bloom", [fbo_fxaa], shaders, uniforms, audio);
+  shader_display        = buildShader("bloom", [fbo_render], shaders, uniforms, audio);
 	// shader_copy 	    = buildShader("copy", [fbo_render, fbo_noise], shaders, uniforms, audio);
 
   var time = 0.0;
@@ -267,25 +269,25 @@ run = function(shaders) {
 
 
 
-      if ( beat < 2) {
-        if(rotateImpulse) {
-          thisPreset = $.extend(true, {}, nextPreset);
-          nextPreset = $.extend(true, {}, PRESETS[(preset_index++) % PRESETS.length]);
-          rotationDir = new GLOW.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
-          rotateImpulse = false;
-          console.log(preset_index)
+      // if ( beat < 2) {
+      //   if(rotateImpulse) {
+      //     thisPreset = $.extend(true, {}, nextPreset);
+      //     nextPreset = $.extend(true, {}, PRESETS[(preset_index++) % PRESETS.length]);
+      //     rotationDir = new GLOW.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
+      //     rotateImpulse = false;
+      //     console.log(preset_index)
 
-        }
+      //   }
 
-      setPreset(thisPreset, nextPreset, 1.0 -  beat / 2, uniforms, [f3, f1])
+      // setPreset(thisPreset, nextPreset, 1.0 -  beat / 2, uniforms, [f3, f1])
 
-      // console.log(thisPreset, nextPreset, beat* 2)
+      // // console.log(thisPreset, nextPreset, beat* 2)
 
-      } else {
-          rotateImpulse = true;
-          alpha= 0.0;
-      }
-
+      // } else {
+      //     rotateImpulse = true;
+      //     alpha= 0.0;
+      // }
+      setUniform(shader_raymarch, "circleSize", audio.data.levels.smooth[3] * uniforms.audioAmount);
 
 
       // strictly adding
@@ -331,8 +333,8 @@ run = function(shaders) {
     shaderPass(context, shader_raymarch, fbo_render)
 
     // 3x fxaa is kind of whack, neeed to consolidate these maybe. Or just add a blur
-    shaderPass(context, shader_post, fbo_fxaa)
-    shaderPass(context, shader_post2, fbo_fxaa_swap)
+    // shaderPass(context, shader_post, fbo_fxaa)
+    // shaderPass(context, shader_post2, fbo_fxaa_swap)
     // shaderPass(context, shader_post3, fbo_fxaa)
 
 

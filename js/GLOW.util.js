@@ -25,7 +25,7 @@ function emptyTexture(w) {
 		camMat 		: new GLOW.Matrix4(),
 		modelView   : new GLOW.Matrix4(),
 		colormap	: new GLOW.Texture( { 
-			data		:"../img/colormap.png", 
+			data		:"img/colormap.png", 
 			minFilter:  GL.LINEAR, 
 			wrap : 		GL.CLAMP_TO_EDGE
 		} ),

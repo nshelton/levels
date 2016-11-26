@@ -38,13 +38,13 @@ uniform	float 		shadeDelta;
 uniform	float 		termThres;
 uniform	float 		width;
 uniform	float 		height;
-uniform mat4      camMat;
-uniform mat4 		  modelView;
+uniform mat4        camMat;
+uniform mat4        modelView;
 
 
 uniform	float 		rotationx;
 uniform	float 		rotationy;
-uniform float     rotationz;
+uniform float       rotationz;
 uniform	float 		absMirror;
 
 uniform	float     dimx;
@@ -59,6 +59,7 @@ uniform float     audioAmount;
 uniform float     audioScale;
 uniform float     palette;
 uniform float     shadow;
+uniform float     circleSize;
 
 // THREE AUdio=================================
 uniform	sampler2D 	audio_time;
@@ -177,7 +178,7 @@ vec2 DE0(vec3 p){
      // index = 0.5 * (orbit / iterCount);
     // index = d/max(max(dimx, dimy), dimz);
     float freq = texture2D(audio_freq, vec2(index, 0.5)).a;
-    freq = (audioAmount == 0.0) ? 0.0 : 0.3 *  pow(freq, (1.0 - audioAmount) * 4.);
+    freq = (audioAmount == 0.0) ? 0.0 : 0.3 *  pow(freq, (1.0 - audioAmount) * 10.);
 
     return vec2(d -  (thickness + freq) * s , orbit);
 
@@ -241,7 +242,7 @@ vec2 DE(vec3 p){
 
         d = min	(d, udBox(p.xyz*s, offs + freq  )/s ) ;
 
-        d = min(d, length(p - t) - 5.0 );
+        d = min(d, length(p - t) - circleSize);
 
         freq *=scale;
 
@@ -293,7 +294,7 @@ float de_shadow( in vec3 ro, in vec3 rd)
     return res;
 }
 
-#define MAX_ITER 100
+#define MAX_ITER 50
 
 #define PI 3.1415
 
@@ -306,7 +307,7 @@ void main() {
     bool hit = false;
 
 
-    float r_scale = 2.;
+    float r_scale = 3.;
 
 	vec3 ray = vec3(2.*gl_FragCoord.xy - vec2(width, height)/r_scale, height/r_scale);
 	vec4 n = texture2D(source0, fract(ray.xy * time/2.));
@@ -345,7 +346,7 @@ void main() {
     // if ( !hit)
         // shade = 1.0;
 
-    float shadowAmount = (hit && shadow < 1.0 )? de_shadow(point, vec3(0.0, 1.0, 1.0)) : 1.0;
+    // float shadowAmount = (hit && shadow < 1.0 )? de_shadow(point, vec3(0.0, 1.0, 1.0)) : 1.0;
 
     // now do the shading instead of putting this in a different shader
     float fakeAO = float(iter)/float(MAX_ITER);
@@ -358,7 +359,8 @@ void main() {
     // color *= vignette;
     color += n_p.xxx / 7.;
 
+    color = color * (1.0 -fakeAO) * ao + (color * (1.0 - ao));
 
-    gl_FragColor = vec4(color * (ao +  (1.0 -fakeAO * (1.0 - ao))) * (shadow +  shadowAmount * (1.0 - shadow)) , 1.0) ;
+    gl_FragColor = vec4(color, 1.0) ;
 
 }
