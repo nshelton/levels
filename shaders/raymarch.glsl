@@ -221,9 +221,9 @@ vec2 DE(vec3 p){
     float index = length(p)/(max(max(dimx, dimy), dimz) * iterCount);
     index*= audioScale;
     float freq = texture2D(audio_freq, vec2(index, 0.5)).a;
-    freq = (audioAmount == 0.0) ? 0.0 : audioAmount *  pow(freq, 2.0);
-
-    p += t;
+    freq = (audioAmount == 0.0) ? 0.0 : audioAmount *  pow(freq, 4.0);
+    // float freq = audioAmount * pow(audioLevelsSmooth.g,  2.0);
+    p += t; 
 
     for (int i = 0; i < 10; i++){
         if( float(i) > iterCount)
@@ -242,14 +242,14 @@ vec2 DE(vec3 p){
 
         d = min	(d, udBox(p.xyz*s, offs + freq  )/s ) ;
 
-        d = min(d, length(p - t) - circleSize);
+        d = min(d, length(p - t) - audioLevelsSmooth.a * 20. * circleSize);
 
-        freq *=scale;
+        freq *= scale;
 
 
         // d = max(d, udBox(p.xyz*scale  , offs)/scale ) ;
 
-        s *= scale;
+        s *= scale * scale;
         // d *= scale;
         // offs *= scale;
         // modelView_s*=scale;
@@ -307,7 +307,7 @@ void main() {
     bool hit = false;
 
 
-    float r_scale = 3.;
+    float r_scale = 2.;
 
 	vec3 ray = vec3(2.*gl_FragCoord.xy - vec2(width, height)/r_scale, height/r_scale);
 	vec4 n = texture2D(source0, fract(ray.xy * time/2.));

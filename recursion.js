@@ -36,6 +36,7 @@ var Uniforms = function() {
   this.absMirror        = 1.0;
   this.circleSize       = 5.0;
 
+  this.pause       = false;
   this.beatSync    = true;
   this.automate    = 1;
   this.automateCam = 0.0;
@@ -45,6 +46,29 @@ var Uniforms = function() {
   this.camZ = -10;
 
 };
+
+
+
+function setupWebSockets() {
+  var socket = io.connect('//localhost:3000');
+  
+  socket.on("data", function(data) {
+    uniforms[data[0]] = data[1];
+    console.log(data[0], data[1]);
+  });
+  
+  socket.on('error', function() {
+      console.error(arguments)
+  });
+}
+
+
+
+function map_range(value, low1, high1, low2, high2) {
+    return low2 + (high2 - low2) * (value - low1) / (high1 - low1);
+}
+
+
 
 // this.update = function() {
 
@@ -107,6 +131,7 @@ function setupUI(){
     gui.add(uniforms, "circleSize", 0, 10).onChange(function(value) { shader_raymarch.circleSize.set(value); }).listen();
     // gui.add(uniforms, "animationSpeed", 0, 1).onChange(function(value) { shader_raymarch.absMirror.set(value); }).listen();
     gui.add(uniforms, "beatSync");
+    gui.add(uniforms, "pause");
     gui.add(uniforms, "automate", 1, 5);
 }
 
@@ -157,7 +182,7 @@ run = function(shaders) {
 
 	var w = window.innerWidth;
 	var h = window.innerHeight;
-	scale = 3;
+	scale = 2;
 
 	// var fbo_march 			= buildFBO(w/scale, h/scale);
   var fbo_render      = buildFBO(w/scale, h/scale);
@@ -182,6 +207,7 @@ run = function(shaders) {
   var rotationDir = new GLOW.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
 
 
+  setupWebSockets();
 
 // Transition logic ===================
   var transitioning = true;
@@ -201,6 +227,8 @@ run = function(shaders) {
   startTime = Date.now() ;
 
 	function render() {
+    if ( uniforms.pause )
+      return;
 
 		controls.update();
     stats.update();
@@ -217,7 +245,7 @@ run = function(shaders) {
     if ( uniforms.automateCam != 0 ) {
       camera.position.set(uniforms.camX * Math.sin(time* uniforms.automateCam), 
                           uniforms.camY * Math.cos(time* uniforms.automateCam),
-                           uniforms.camZ * Math.cos(time* uniforms.automateCam));
+                          uniforms.camZ * Math.cos(time* uniforms.automateCam));
     } else {
       uniforms.camX = camera.position.x;
       uniforms.camY = camera.position.y;
@@ -287,10 +315,12 @@ run = function(shaders) {
       //     rotateImpulse = true;
       //     alpha= 0.0;
       // }
-      setUniform(shader_raymarch, "circleSize", audio.data.levels.smooth[3] * uniforms.audioAmount);
+      // setUniform(shader_raymarch, "circleSize", audio.data.levels.smooth[3] * uniforms.audioAmount);
 
 
       // strictly adding
+      uniforms.automate = 4.0 - 4.0 * audio.data.beat.was;
+
        rotMag = Math.pow(10.0, -uniforms.automate); //envelope(beat);
 
       // rotmag = Math.easeInOutQuart(beat, 0, 1, 1);
@@ -306,8 +336,8 @@ run = function(shaders) {
 
 
         // setUniform(shader_raymarch, "dimx",  Math.sin(lfo/ 4.) * 25 + 25);
-        setUniform(shader_raymarch, "dimy",  uniforms.dimy + rotMag * Math.sin(lfo/ 16.));
-        setUniform(shader_raymarch, "dimz",  uniforms.dimz + rotMag * Math.sin(lfo/ 64.)) ;
+        // setUniform(shader_raymarch, "dimy",  uniforms.dimy + rotMag * Math.sin(lfo/ 16.));
+        // setUniform(shader_raymarch, "dimz",  uniforms.dimz + rotMag * Math.sin(lfo/ 64.)) ;
         // setUniform(shader_raymarch, "absMirror",  Math.sin(lfo/ 8.) * 0.5 + 0.5  ) ;
         // setUniform(shader_raymarch, "scale",  Math.sin(lfo/ 8.) * 0.25 + 1.25 ) ;
 
@@ -316,8 +346,8 @@ run = function(shaders) {
 
     }
 
-      shader_raymarch.modelView.setRotation(uniforms.rotationx, uniforms.rotationy, uniforms.rotationz) ;
-      shader_raymarch.modelView.setPosition(uniforms.translationx, uniforms.translationy, uniforms.translationz) ;
+    shader_raymarch.modelView.setRotation(uniforms.rotationx, uniforms.rotationy, uniforms.rotationz) ;
+    shader_raymarch.modelView.setPosition(uniforms.translationx, uniforms.translationy, uniforms.translationz) ;
 
 
     if (uniforms.beatSync) {
