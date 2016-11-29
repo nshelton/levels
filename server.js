@@ -37,27 +37,54 @@ function switchItUp() {
       console.log(data);
 }
 
-
+var modifyTranslation    = false;
+var modifyRotation       = false;
 
 
 var osc = require('node-osc');
 
 //gyrosc is pretty sweet for orientation. I wish I could customize the interface. 
 //Maybe I will have to build my own app
-var oscTouchServer = new osc.Server(9000, '192.168.0.101');
+// var oscTouchServer = new osc.Server(9000, '192.168.0.101'); // gray area
+var oscTouchServer = new osc.Server(9000, '192.168.1.66'); //
 
 oscTouchServer.on("message", function(msg, rinfo) {
+    
+    // console.log(msg);
 
+    // handle state changes
+    if ( msg[0] == '/1/toggle4' ) //rotation
+        modifyRotation = msg[1]
+
+    if ( msg[0] == '/1/toggle2' ) //translation
+        modifyTranslation = msg[1]
+
+
+    if ( msg[0] == '/1/fader1' ) //iterations
+        io.sockets.emit("data", ["iterCount", msg[1] * 8]);                
+
+
+    if ( msg[0] == '/1/fader2' ) //mirrors
+        io.sockets.emit("data", ["absMirror", msg[1]]);                
+
+
+    if (msg[2] && msg[2][0])
     switch (msg[2][0]) {
     	case "/gyrosc/gyro" :
-			io.sockets.emit("data", ["rotationx", msg[2][1] * 2.0]);
-			io.sockets.emit("data", ["rotationy", msg[2][2] * 2.0]);
-			io.sockets.emit("data", ["rotationz", msg[2][3] * 2.0]);
-			break;
+            if (modifyRotation)
+            {
+                io.sockets.emit("data", ["rotationx", msg[2][1] * 2.0]);
+                io.sockets.emit("data", ["rotationy", msg[2][2] * 2.0]);
+                io.sockets.emit("data", ["rotationz", msg[2][3] * 2.0]);                
+            }
+            if (modifyTranslation)
+            {
+                io.sockets.emit("data", ["translationx", 50.0 * Math.abs(msg[2][1]) / 3.14]);
+                io.sockets.emit("data", ["translationy", 50.0 * Math.abs(msg[2][2]) / 3.14]);
+                io.sockets.emit("data", ["translationz", 50.0 * Math.abs(msg[2][3]) / 3.14]);                
+            }
 
-    	case "/gyrosc/button" :
-    		console.log(msg[2])
-			io.sockets.emit("data", ["rotationz", msg[2][3] * 2.0]);
+
 			break;
 	}
 
