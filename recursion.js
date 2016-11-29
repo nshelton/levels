@@ -54,6 +54,12 @@ function setupWebSockets() {
   
   socket.on("data", function(data) {
     uniforms[data[0]] = data[1];
+
+    if (shader_raymarch[data[0]]){
+      console.log(data)
+      shader_raymarch[data[0]].set([data[1]]);
+    }
+
     console.log(data[0], data[1]);
   });
   
@@ -121,9 +127,10 @@ function setupUI(){
     // f2.add(uniforms, "shadow", 0, 1).step(0.1).onChange(function(value) { shader_raymarch.shadow.set(value); }).listen();
    
     f3 = gui.addFolder('Camera');
-    f3.add(uniforms, "camX",-500, 500).onChange(function(value) { camera.position.x = value; }).listen();
-    f3.add(uniforms, "camY",-500, 500).onChange(function(value) { camera.position.y = value; }).listen();
-    f3.add(uniforms, "camZ",-500, 500).onChange(function(value) { camera.position.z = value; }).listen();
+    var camRange = 1000;
+    f3.add(uniforms, "camX",-camRange, camRange).onChange(function(value) { camera.position.x = value; }).listen();
+    f3.add(uniforms, "camY",-camRange, camRange).onChange(function(value) { camera.position.y = value; }).listen();
+    f3.add(uniforms, "camZ",-camRange, camRange).onChange(function(value) { camera.position.z = value; }).listen();
     f3.add(uniforms, "automateCam", -1, 1);
 
 
@@ -294,28 +301,6 @@ run = function(shaders) {
               return 0.001
             }
       }
-
-
-
-      // if ( beat < 2) {
-      //   if(rotateImpulse) {
-      //     thisPreset = $.extend(true, {}, nextPreset);
-      //     nextPreset = $.extend(true, {}, PRESETS[(preset_index++) % PRESETS.length]);
-      //     rotationDir = new GLOW.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
-      //     rotateImpulse = false;
-      //     console.log(preset_index)
-
-      //   }
-
-      // setPreset(thisPreset, nextPreset, 1.0 -  beat / 2, uniforms, [f3, f1])
-
-      // // console.log(thisPreset, nextPreset, beat* 2)
-
-      // } else {
-      //     rotateImpulse = true;
-      //     alpha= 0.0;
-      // }
-      // setUniform(shader_raymarch, "circleSize", audio.data.levels.smooth[3] * uniforms.audioAmount);
 
 
       // strictly adding

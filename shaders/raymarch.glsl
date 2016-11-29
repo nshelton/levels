@@ -294,7 +294,7 @@ float de_shadow( in vec3 ro, in vec3 rd)
     return res;
 }
 
-#define MAX_ITER 50
+#define MAX_ITER 100
 
 #define PI 3.1415
 

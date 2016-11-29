@@ -1,0 +1,27 @@
+{
+  "name": "levels",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "dependencies": {
+    "express": "^4.14.0",
+    "node-osc": "^2.0.4",
+    "nodemon": "^1.11.0",
+    "socket.io": "^1.7.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nshelton/levels.git"
+  },
+  "author": "nshelton",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nshelton/levels/issues"
+  },
+  "homepage": "https://github.com/nshelton/levels#readme"
+}
