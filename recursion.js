@@ -1,8 +1,7 @@
 var camera;
 
-// var shader_raymarch, shader_render, shader_post, audio;
-    var M_PI = 3.141519 ;
-    var TWO_PI = 3.141519 * 2.0;
+var M_PI = 3.141519 ;
+var TWO_PI = 3.141519 * 2.0;
 
 var Uniforms = function() {
   this.rotationy        = 0.0;
@@ -44,10 +43,9 @@ var Uniforms = function() {
   this.camX = -10;
   this.camY = -10;
   this.camZ = -10;
+  this.g_frameScale = 2;
 
 };
-
-
 
 function setupWebSockets() {
   var socket = io.connect('//localhost:3000');
@@ -139,7 +137,7 @@ function setupUI(){
     // gui.add(uniforms, "animationSpeed", 0, 1).onChange(function(value) { shader_raymarch.absMirror.set(value); }).listen();
     gui.add(uniforms, "beatSync");
     gui.add(uniforms, "pause");
-    gui.add(uniforms, "automate", 1, 5);
+    gui.add(uniforms, "automate", 0, 5);
 }
 
 
@@ -173,6 +171,15 @@ function randomPreset(last, d_rotation) {
   }
 }
 
+function gup( name, url ) {
+  if (!url) url = location.href
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( url );
+  return results == null ? null : results[1];
+}
+
 function setUniform(shader, id, value)
 {
     uniforms[id] = value;
@@ -189,10 +196,10 @@ run = function(shaders) {
 
 	var w = window.innerWidth;
 	var h = window.innerHeight;
-	scale = 2;
+	uniforms.g_frameScale = parseInt(gup("res")) || 2;
 
 	// var fbo_march 			= buildFBO(w/scale, h/scale);
-  var fbo_render      = buildFBO(w/scale, h/scale);
+  var fbo_render      = buildFBO(w/uniforms.g_frameScale, h/uniforms.g_frameScale);
   var fbo_fxaa        = buildFBO(w, h);
   var fbo_fxaa_swap   = buildFBO(w, h);
 	var fbo_noise 			= buildFBO(w, h, genNoise(w,h));
@@ -202,8 +209,10 @@ run = function(shaders) {
   shader_post         = buildShader("fxaa", [fbo_render], shaders, uniforms, audio);
   shader_post2        = buildShader("fxaa", [fbo_fxaa], shaders, uniforms, audio);
   shader_post3        = buildShader("fxaa", [fbo_fxaa_swap], shaders, uniforms, audio);
-  shader_display        = buildShader("bloom", [fbo_render], shaders, uniforms, audio);
+  shader_display       = buildShader("bloom", [fbo_render], shaders, uniforms, audio);
 	// shader_copy 	    = buildShader("copy", [fbo_render, fbo_noise], shaders, uniforms, audio);
+
+//  shader_raymarch["frameScale"].set(g_frameScale);
 
   var time = 0.0;
 
@@ -214,7 +223,7 @@ run = function(shaders) {
   var rotationDir = new GLOW.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
 
 
-  setupWebSockets();
+  //setupWebSockets();
 
 // Transition logic ===================
   var transitioning = true;
@@ -280,7 +289,7 @@ run = function(shaders) {
     shader_display.rgbShift.set(audio.data.levels.smooth[2] + 0.1);
 
 		shader_raymarch.time.set(time);
-		// shader_render.time.set(time);
+		shader_raymarch.g_frameScale.set(uniforms.g_frameScale);
 
 		requestAnimationFrame(render);
 
@@ -304,16 +313,15 @@ run = function(shaders) {
 
 
       // strictly adding
-      uniforms.automate = 4.0 - 4.0 * audio.data.beat.was;
+      //uniforms.automate = 4.0 - 4.0 * audio.data.beat.was;
 
-       rotMag = Math.pow(10.0, -uniforms.automate); //envelope(beat);
+       //rotMag = Math.pow(10.0, -uniforms.automate); //envelope(beat);
 
       // rotmag = Math.easeInOutQuart(beat, 0, 1, 1);
         // setUniform(shader_raymarch, "rotationx",  last.rotationx, target.rotationx)
         setUniform(shader_raymarch, "rotationx",  uniforms.rotationx + rotationDir.value[0] * rotMag)
-        setUniform(shader_raymarch, "rotationy",  uniforms.rotationy + rotationDir.value[1] * rotMag)
+        setUniform(shader_raymarch, "rotationy",  uniforms.rotationy + rotationDir.value[1] * rotMag + Math.sin(time/10.0)*uniforms.automate * 0.005)
         setUniform(shader_raymarch, "rotationz",  uniforms.rotationz + rotationDir.value[2] * rotMag)
-
 
         uniforms.translationx += Math.sin(lfo/ 12.) * rotMag;
         uniforms.translationy += Math.sin(lfo/ 18.) * rotMag;

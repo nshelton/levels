@@ -40,7 +40,7 @@ uniform	float 		width;
 uniform	float 		height;
 uniform mat4        camMat;
 uniform mat4        modelView;
-
+uniform float       g_frameScale;
 
 uniform	float 		rotationx;
 uniform	float 		rotationy;
@@ -306,10 +306,7 @@ void main() {
     vec3 point;
     bool hit = false;
 
-
-    float r_scale = 2.;
-
-	vec3 ray = vec3(2.*gl_FragCoord.xy - vec2(width, height)/r_scale, height/r_scale);
+	vec3 ray = vec3(2.*gl_FragCoord.xy - vec2(width, height)/g_frameScale, height/g_frameScale);
 	vec4 n = texture2D(source0, fract(ray.xy * time/2.));
     vec2 jitter = (n.xy - 0.5) * 2.;
 	ray = normalize(vec3(ray.xy + jitter, -sqrt(max(ray.z*ray.z - dot(ray.xy, ray.xy)*.2, 0.))));

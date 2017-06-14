@@ -770,7 +770,7 @@ ThreeAudio.Source = function (options) {
 
   this.processingDelay = 0;
 
-  if (!webkitAudioContext) {
+  if (!AudioContext) {
     alert("Web Audio API not supported");
   } else {
     this.initElement(options.element);
@@ -780,7 +780,7 @@ ThreeAudio.Source = function (options) {
 ThreeAudio.Source.prototype = {
 
   initElement: function (element) {
-    var c = this.context = new webkitAudioContext();
+    var c = this.context = new AudioContext();
 
     // Create source
     if (element) {
