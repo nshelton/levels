@@ -54,7 +54,7 @@ function emptyTexture(w) {
 
 	return new GLOW.Shader({
 		data : GLOW_uniforms,
-			vertexShader:  shaders.vertex.fragmentShader,
+		vertexShader:  shaders.vertex.fragmentShader,
         fragmentShader: shaders[frag_id].fragmentShader,
 		indices: GLOW.Geometry.Plane.indices()
 	});
