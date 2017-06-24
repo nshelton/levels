@@ -2064,6 +2064,70 @@ GLOW.Matrix4 = function() {
         this.rotation.value[2] += f;
         this.setRotation(this.rotation.value[0], this.rotation.value[1], this.rotation.value[2])
     };
+
+    function  SIGN( x) {return (x >= 0.0) ? +1.0 : -1.0;}
+    function  NORM( a,  b,  c,  d) {return Math.sqrt(a * a + b * b + c * c + d * d);}
+
+    b.prototype.GetQuaternion = function() {
+        var b = this.value;
+        r11 = b[0];
+        r22 = b[5];
+        r33 = b[10];
+        
+        r32 = b[9];
+        r23 = b[6];
+        
+        r13 = b[8];
+        r31 = b[2];
+
+        r21 = b[1];
+        r12 = b[4];
+
+        var q0 = ( r11 + r22 + r33 + 1.0) / 4.0;
+        var q1 = ( r11 - r22 - r33 + 1.0) / 4.0;
+        var q2 = (-r11 + r22 - r33 + 1.0) / 4.0;
+        var q3 = (-r11 - r22 + r33 + 1.0) / 4.0;
+        if(q0 < 0.0) q0 = 0.0;
+        if(q1 < 0.0) q1 = 0.0;
+        if(q2 < 0.0) q2 = 0.0;
+        if(q3 < 0.0) q3 = 0.0;
+        q0 = Math.sqrt(q0);
+        q1 = Math.sqrt(q1);
+        q2 = Math.sqrt(q2);
+        q3 = Math.sqrt(q3);
+        if(q0 >= q1 && q0 >= q2 && q0 >= q3) {
+            q0 *= +1.0;
+            q1 *= SIGN(r32 - r23);
+            q2 *= SIGN(r13 - r31);
+            q3 *= SIGN(r21 - r12);
+        } else if(q1 >= q0 && q1 >= q2 && q1 >= q3) {
+            q0 *= SIGN(r32 - r23);
+            q1 *= +1.0;
+            q2 *= SIGN(r21 + r12);
+            q3 *= SIGN(r13 + r31);
+        } else if(q2 >= q0 && q2 >= q1 && q2 >= q3) {
+            q0 *= SIGN(r13 - r31);
+            q1 *= SIGN(r21 + r12);
+            q2 *= +1.0;
+            q3 *= SIGN(r32 + r23);
+        } else if(q3 >= q0 && q3 >= q1 && q3 >= q2) {
+            q0 *= SIGN(r21 - r12);
+            q1 *= SIGN(r31 + r13);
+            q2 *= SIGN(r32 + r23);
+            q3 *= +1.0;
+        } else {
+            console.log("fucked up quaternions");
+        }
+        r = NORM(q0, q1, q2, q3);
+        q0 /= r;
+        q1 /= r;
+        q2 /= r;
+        q3 /= r;
+
+        return new GLOW.Quaternion(q0,q1,q2,q3);
+
+    };
+
     b.prototype.setQuaternion = function(a) {
         var b = this.value,
             f = a.value,

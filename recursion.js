@@ -89,8 +89,11 @@ function setupUI(){
     gui = new dat.GUI();
     gui.remember(uniforms);
 
+    gui2 = new dat.GUI();
+    gui2.remember(uniforms);
+
     var automations = ["autoRotX", "autoRotY", "autoRotZ", "autoTransX", "autoTransY", "autoTransZ",  "autoDimX", "autoDimY", "autoDimZ"]
-    f0 = gui.addFolder('Automation');
+    f0 = gui2.addFolder('Automation');
 
     for (var i = 0; i < automations.length; i ++) 
       f0.add(uniforms, automations[i], 0, 1);
@@ -136,7 +139,7 @@ function setupUI(){
     gui.add(uniforms, "pause");
     gui.add(uniforms, "automate", 0, 1);
     gui.add(uniforms, "automateFreq", 0.00001, 1);
-    gui.add(uniforms, "paramSmoothing", 0.00001, 1).listen();
+    gui.add(uniforms, "paramSmoothing", 0.00001, 1)
 
 }
 
@@ -165,7 +168,14 @@ var newPos = new GLOW.Vector3();
 var newRot = new GLOW.Vector3();
 
 var ignoreParams = ["paramSmoothing"];
-var dontLerpParams = ["palette"];
+var dontLerpParams = [ "palette" ];
+
+
+var qsrc = new THREE.Quaternion();
+var qtgt = new THREE.Quaternion();
+var q = new THREE.Quaternion();
+
+var resultRot = new GLOW.Quaternion();
 
 function lerpShaders(src, tgt)
 {
@@ -183,33 +193,52 @@ function lerpShaders(src, tgt)
       for (var i = 0; i < data.length; i ++){
         tgt[uniform].value[i] = data[i];
       }
-
       continue;
     }    
-
     
-    if ( data.length > 4) {
+    if (uniform == "camMat") {
 
       newPos.sub(src[uniform].getPosition(), tgt[uniform].getPosition())
       newPos.multiplyScalar(uniforms.paramSmoothing);
       tgt[uniform].addPosition(newPos);
 
-      newRot.sub(src[uniform].getRotation(), tgt[uniform].getRotation())
+      var t = controls.target;
+      var u = camera.up;
 
-      newRot.multiplyScalar(uniforms.paramSmoothing);
-      newRot.add(newRot, tgt[uniform].getRotation());
+      tgt[uniform].lookAt(
+        {value:[t.x, t.y, t.z]},
+        {value:[u.x, u.y, u.z]}
+      );
 
-      tgt[uniform].setRotation(newRot);
+      continue;
+    } 
+
+    if (uniform == "modelView") {
+      newPos.sub(src[uniform].getPosition(), tgt[uniform].getPosition())
+      newPos.multiplyScalar(uniforms.paramSmoothing);
+      tgt[uniform].addPosition(newPos);
+
+      var sRot = src[uniform].GetQuaternion();
+      var tRot = tgt[uniform].GetQuaternion();
+      console.log(sRot);
+
+      qsrc.set( sRot.value[0], sRot.value[1],  sRot.value[2], sRot.value[3] );
+      qtgt.set( tRot.value[0], tRot.value[1],  tRot.value[2], tRot.value[3] );
+
+   ///   tgt[uniform].setQuaternion(tgt[uniform].GetQuaternion().lerpSelf(sRot, uniforms.paramSmoothing));
+
+      qtgt.slerp(qsrc, uniforms.paramSmoothing);
+      resultRot.set(qsrc.x, qsrc.y, qsrc.z, qsrc.w);
+      tgt[uniform].setQuaternion(resultRot);
 
       continue;
     } 
 
     for (var i = 0; i < data.length; i ++){
-      var diff = data[i] - tgt[uniform].value[i];
-
-       tgt[uniform].value[i] = tgt[uniform].value[i] + diff * uniforms.paramSmoothing;
-
+        var diff = data[i] - tgt[uniform].value[i];
+        tgt[uniform].value[i] = tgt[uniform].value[i] + diff * uniforms.paramSmoothing;
     }
+
   }    
 }
 
@@ -332,8 +361,7 @@ run = function(shaders) {
     shader_raymarch.modelView.setPosition(uniforms.translationx, uniforms.translationy, uniforms.translationz) ;
 
 
-    if (uniforms.paramSmoothing < 1.0)
-      lerpShaders(shader_raymarch, shader_raymarch_smoothed);
+    lerpShaders(shader_raymarch, shader_raymarch_smoothed);
     
     shaderPass(context, shader_raymarch_smoothed, fbo_render)
     shader_display.draw();

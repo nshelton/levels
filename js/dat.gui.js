@@ -2319,7 +2319,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      width: '122px',
 	      height: '102px',
 	      padding: '3px',
-	      backgroundColor: '#222',
+	      backgroundColor: '#f00',
 	      boxShadow: '0px 1px 3px rgba(0,0,0,0.3)'
 	    });
 	
@@ -3812,11 +3812,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	
 	function setPresetSelectIndex(gui) {
+
 	  for (var index = 0; index < gui.__preset_select.length; index++) {
 	    if (gui.__preset_select[index].value === gui.preset) {
 	      gui.__preset_select.selectedIndex = index;
 	    }
 	  }
+		
 	}
 	
 	function updateDisplays(controllerArray) {

@@ -315,14 +315,12 @@ void main() {
     float vignette = 1.0 - length(ray.xy);
     vec4 n_p = texture2D(source0, fract(ray.xy + time*10.)) - 0.5;
 
-
 	mat3 r = inv(mat3(camMat));
 	ray *= r;
 
-
     vec2 dist;
  	// raycasting parameter
- 	float t = 0.;
+ 	float t = 3.0;
  	int iter = 0;
 
     for(int i = 0; i < MAX_ITER; i++) {
