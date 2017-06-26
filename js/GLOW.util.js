@@ -78,13 +78,15 @@ function buildFBO(w, h, data) {
 function init(context) {
 	context.enableExtension("OES_texture_float" );
 	context.enableExtension("OES_texture_float_linear");
-
+	context.domElement.className = 'renderer';
 	var container = document.getElementById( 'container' );
 	container.appendChild( context.domElement );
+
 
 	stats = new Stats();
 	stats.domElement.style.position = 'absolute';
 	stats.domElement.style.top = '0px';
+
 	container.appendChild( stats.domElement );
 
 	camera = new THREE.PerspectiveCamera( 60, 1.0, 0.1, 1000);
@@ -100,8 +102,6 @@ function init(context) {
 	controls.zoomSpeed = 2.;
 	controls.panSpeed = 0.3;
 	controls.dynamicDampingFactor = .6;
-
-
 }
 
 function genNoise(w, h) {

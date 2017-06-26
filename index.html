@@ -13,21 +13,76 @@
 		<script type="text/javascript" src="js/GLOW.js"></script>
 		<script type="text/javascript" src="js/GLOW.util.js"></script>
 		<script type="text/javascript" src="js/stats.min.js"></script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.2/dragula.min.js'></script>
 
+
+		<script type="text/javascript" src="sequence.js"></script>
 		<script type="text/javascript" src="js/ThreeAudio.js"></script>
     	<script type="text/javascript" src="js/TrackballControls.js"></script>
     	<script type="text/javascript" src="js/socket.io.test.js"></script>
 
     	<script type="text/javascript" src="./presets.js"></script>
 		<script type="text/javascript" src="./recursion.js"></script>
+<link rel="stylesheet" href="//cdn.jsdelivr.net/font-hack/2.020/css/hack.min.css">
+
 
 	 <!--   <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script> -->
+
+	 <style>
+		body{ font-family: Hack, monospace; }
+
+		#overlay {
+			position:absolute;
+			top:30px;
+			left:0;
+			color: rgba(255,255,255,0.5);
+			z-index: 100;
+			overflow-y: scroll;
+			direction: rtl;
+		}
+
+		#overlay::-webkit-scrollbar-track
+		{
+			border: 1px solid rgba(255,255,255,0.5);
+			background-color: rgba(255,255,255,0.5);
+		}
+
+		#overlay::-webkit-scrollbar
+		{
+			width: 10px;
+			background-color: black;
+		}
+
+		#overlay::-webkit-scrollbar-thumb
+		{
+			background-color: rgba(255,255,255,0.5);
+		}
+
+		.preset {
+			padding:5px 10px;
+			text-align: left;
+		}
+		.selected {
+			background-color: rgba(255,255,255,0.5);
+		}
+		.renderer {
+			margin-left: 0.3%;
+			margin-top: 0.3%;
+			width: 99%;
+			height:99.9%;
+		}
+		body {
+
+			background-color:black;
+		}
+		
+	</style>
 
 	</head>
 		<div id="overlay">
 		</div>
 
-	<body id="container" oncontextmenu="return false;">
+	<body id="container">
 
 	</body>
 </html>

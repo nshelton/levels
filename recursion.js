@@ -25,8 +25,8 @@ var Uniforms = function() {
   this.stepRatio        = 1;
 
 	this.time             = 1.0;
-	this.width            = window.innerWidth;
-	this.height           = window.innerHeight;
+	this.width            = 0;
+	this.height           = 0;
 	this.shadeDelta   	  = 0.001;
   this.termThres        = 0.001;
   this.audioAmount      =  0.4;
@@ -86,17 +86,21 @@ function setupUI(){
 
     uniforms = new Uniforms();
 
+
     gui = new dat.GUI();
     gui.remember(uniforms);
 
     gui2 = new dat.GUI();
     gui2.remember(uniforms);
 
+    gui0 = new dat.GUI();
+
+
     var automations = ["autoRotX", "autoRotY", "autoRotZ", "autoTransX", "autoTransY", "autoTransZ",  "autoDimX", "autoDimY", "autoDimZ"]
     f0 = gui2.addFolder('Automation');
 
     for (var i = 0; i < automations.length; i ++) 
-      f0.add(uniforms, automations[i], 0, 1);
+      f0.add(uniforms, automations[i], 0, 1).listen();
 
     f1 = gui.addFolder('Geometry');
 
@@ -105,14 +109,14 @@ function setupUI(){
     f1.add(uniforms, "rotationz", 0,TWO_PI).onChange(function(value) { shader_raymarch.rotationz.set(value); }).listen();
 
 
-    f1.add(uniforms, "dimx", 0, 50).onChange(function(value) { shader_raymarch.dimx.set(value); }).listen();
-    f1.add(uniforms, "dimy", 0, 50).onChange(function(value) { shader_raymarch.dimy.set(value); }).listen();
-    f1.add(uniforms, "dimz", 0, 50).onChange(function(value) { shader_raymarch.dimz.set(value); }).listen();
+    f1.add(uniforms, "dimx", 0, 100).onChange(function(value) { shader_raymarch.dimx.set(value); }).listen();
+    f1.add(uniforms, "dimy", 0, 100).onChange(function(value) { shader_raymarch.dimy.set(value); }).listen();
+    f1.add(uniforms, "dimz", 0, 100).onChange(function(value) { shader_raymarch.dimz.set(value); }).listen();
 
 
-    f1.add(uniforms, "translationx", 0, 50).listen();
-    f1.add(uniforms, "translationy", 0, 50).listen();
-    f1.add(uniforms, "translationz", 0, 50).listen();
+    f1.add(uniforms, "translationx", 0, 100).listen();
+    f1.add(uniforms, "translationy", 0, 100).listen();
+    f1.add(uniforms, "translationz", 0, 100).listen();
     // f1.add(uniforms, "thickness", 0, 1).onChange(function(value) { shader_raymarch.thickness.set(value); }).listen();
     f1.add(uniforms, "scale", 0.5, 2).onChange(function(value) { shader_raymarch.scale.set(value); }).listen();
     f1.add(uniforms, "iterCount", 1, 8).step(1.0).onChange(function(value) { shader_raymarch.iterCount.set(value); }).listen();
@@ -139,20 +143,71 @@ function setupUI(){
     gui.add(uniforms, "pause");
     gui.add(uniforms, "automate", 0, 1);
     gui.add(uniforms, "automateFreq", 0.00001, 1);
-    gui.add(uniforms, "paramSmoothing", 0.00001, 1)
+    gui0.add(uniforms, "paramSmoothing", 0.00001, 1)
 
 }
 
-function handleKeypress(e) {
+function handleKeyDown(e) {
+// left = 37
+// up = 38
+// right = 39
+// down = 40
   // q key
   if (e.keyCode == 81) {
-     uniforms.paramSmoothing = (uniforms.paramSmoothing == 0.01) ? 0.99 : 0.01
+     uniforms.paramSmoothing = (uniforms.paramSmoothing == 0.01) ? 0.88 : 0.01;
+  }
+  if (e.keyCode == 39) {
+     nextPreset();
+  }
+  if (e.keyCode == 37) {
+     lastPreset();
   }
 }
 
 
+historyPlots = {}
+var historyLength = 3000
+
+function makeXYZData() {
+    var data = {
+      x : [],
+      y : [],
+      z : []
+    }
+
+    for(var i = 0; i < historyLength; i ++) {
+      data.x.push(0);
+      data.y.push(0);
+      data.z.push(0);
+    }
+
+    return data;
+}
+
+var _debug = false;
+
 $(document).ready(function() {
-  document.addEventListener("keydown", handleKeypress);
+
+  if ( _debug) {
+    debugView = document.createElement('canvas');
+    debugView.className = 'debug';
+    debugView.width = 1600;
+    debugView.height = 500;
+    debugView.style.position = 'absolute';
+    debugView.style.zIndex = 200;
+    debugView.style.marginTop = '0px';
+    debugView.style.bottom = 0;
+    debugView.style.right = 0;
+    debugContext = debugView.getContext('2d');
+
+    document.body.appendChild(debugView);
+
+    historyPlots["src"] = makeXYZData();
+    historyPlots["dst"] = makeXYZData();
+
+  }
+
+  document.addEventListener("keydown", handleKeyDown);
 
   new GLOW.Load({
     vertex:		"./shaders/vertex.glsl",
@@ -163,6 +218,35 @@ $(document).ready(function() {
     onLoadComplete: run
   });
 });
+ 
+
+var plotHeight = 200;
+
+function plotArray(array, color, offset) {
+  offset += 100
+  debugContext.strokeStyle = color;
+  debugContext.beginPath();
+
+  debugContext.moveTo(0, 0);
+
+  for ( var i = 0; i < array.length; i ++) {
+    debugContext.lineTo( 
+      (i/array.length ) * debugView.width, 
+      plotHeight * (array[i] / (2.0 * M_PI )) + offset )
+      
+  }
+
+  debugContext.stroke();
+}
+
+function drawLine(y, size) {
+  debugContext.strokeStyle = "#fff";
+  debugContext.beginPath();
+  debugContext.moveTo(0, y);
+  debugContext.lineTo( debugView.width, y);
+  debugContext.stroke();
+}
+
 
 var newPos = new GLOW.Vector3();
 var newRot = new GLOW.Vector3();
@@ -173,14 +257,70 @@ var dontLerpParams = [ "palette" ];
 
 var qsrc = new THREE.Quaternion();
 var qtgt = new THREE.Quaternion();
+var qdiff = new THREE.Quaternion();
 var q = new THREE.Quaternion();
 
+var rad2Deg = 180 / M_PI;
+var frame = 0;
+
 var resultRot = new GLOW.Quaternion();
+var dRot = new GLOW.Vector3();
+
+
+function updateDebug()
+{ 
+    debugContext.clearRect(0, 0, debugView.width, debugView.height);
+
+    frame ++;
+  if(frame >= historyLength - 1)
+    frame -= historyLength;
+
+  drawLine(0)
+  drawLine(100)
+  drawLine(200)
+  drawLine(201)
+  drawLine(300)
+  
+  historyPlots["src"].x[frame] = sRot.value[0];
+  historyPlots["src"].y[frame] = sRot.value[1];
+  historyPlots["src"].z[frame] = sRot.value[2];
+
+  plotArray(historyPlots["src"].x, "#ff0000", 0);
+  plotArray(historyPlots["src"].y, "#00ff00", 0);
+  plotArray(historyPlots["src"].z, "#0000ff", 0);
+
+      
+  historyPlots["dst"].x[frame] = tRot.value[0];
+  historyPlots["dst"].y[frame] = tRot.value[1];
+  historyPlots["dst"].z[frame] = tRot.value[2];
+
+  plotArray(historyPlots["dst"].x, "#ffff00", 0);
+  plotArray(historyPlots["dst"].y, "#00ffff", 0);
+  plotArray(historyPlots["dst"].z, "#ff00ff", 0);
+ 
+}
+
+function smoothFactor() 
+{
+  return  1 / (500 * Math.pow(uniforms.paramSmoothing, 2) );
+}
+
+function lerpAngle(s, t) {
+
+  if(s < t && (Math.abs(s - t) > Math.abs(s - (t - TWO_PI)))) 
+    t -= TWO_PI;
+
+  var diff = s - t;
+
+  return t + diff * smoothFactor() ;
+
+}
+
 
 function lerpShaders(src, tgt)
 {
   for(var uniform in src.uniforms) {
-    if ( ignoreParams.indexOf(uniform) > -1)
+    if ( uniform == "paramSmoothing")
       continue;
 
     var data = src[uniform].value;
@@ -188,7 +328,7 @@ function lerpShaders(src, tgt)
     if ( !data )
       continue;
 
-    if (dontLerpParams.indexOf(uniform) > -1 || uniforms.paramSmoothing > 0.9) {
+    if (dontLerpParams.indexOf(uniform) > -1 || smoothFactor()  > 0.9) {
       
       for (var i = 0; i < data.length; i ++){
         tgt[uniform].value[i] = data[i];
@@ -199,7 +339,7 @@ function lerpShaders(src, tgt)
     if (uniform == "camMat") {
 
       newPos.sub(src[uniform].getPosition(), tgt[uniform].getPosition())
-      newPos.multiplyScalar(uniforms.paramSmoothing);
+      newPos.multiplyScalar(smoothFactor() );
       tgt[uniform].addPosition(newPos);
 
       var t = controls.target;
@@ -213,30 +353,32 @@ function lerpShaders(src, tgt)
       continue;
     } 
 
+
     if (uniform == "modelView") {
-      newPos.sub(src[uniform].getPosition(), tgt[uniform].getPosition())
-      newPos.multiplyScalar(uniforms.paramSmoothing);
+      newPos.sub(src[uniform].getPosition(), tgt[uniform].getPosition());
+      newPos.multiplyScalar(smoothFactor() );
       tgt[uniform].addPosition(newPos);
 
-      var sRot = src[uniform].GetQuaternion();
-      var tRot = tgt[uniform].GetQuaternion();
-      console.log(sRot);
+      sRot = src[uniform].getRotation();
+      tRot = tgt[uniform].getRotation();
 
-      qsrc.set( sRot.value[0], sRot.value[1],  sRot.value[2], sRot.value[3] );
-      qtgt.set( tRot.value[0], tRot.value[1],  tRot.value[2], tRot.value[3] );
 
-   ///   tgt[uniform].setQuaternion(tgt[uniform].GetQuaternion().lerpSelf(sRot, uniforms.paramSmoothing));
+      tRot.value[0] = lerpAngle(sRot.value[0], tRot.value[0])
+      tRot.value[1] = lerpAngle(sRot.value[1], tRot.value[1])
+      tRot.value[2] = lerpAngle(sRot.value[2], tRot.value[2])
 
-      qtgt.slerp(qsrc, uniforms.paramSmoothing);
-      resultRot.set(qsrc.x, qsrc.y, qsrc.z, qsrc.w);
-      tgt[uniform].setQuaternion(resultRot);
+
+      tgt[uniform].setRotation(tRot);
+
+      if (_debug)
+        updateDebug();
 
       continue;
-    } 
+    }
 
     for (var i = 0; i < data.length; i ++){
         var diff = data[i] - tgt[uniform].value[i];
-        tgt[uniform].value[i] = tgt[uniform].value[i] + diff * uniforms.paramSmoothing;
+        tgt[uniform].value[i] = tgt[uniform].value[i] + diff * smoothFactor() ;
     }
 
   }    
@@ -259,8 +401,10 @@ run = function(shaders) {
 	context = new GLOW.Context();
 	init(context);
 
-	var w = window.innerWidth;
-	var h = window.innerHeight;
+	var w = uniforms.width = window.innerWidth ;
+	var h = uniforms.height = window.innerHeight;
+
+  
 	uniforms.g_frameScale = parseInt(gup("res")) || 2;
 
 	// var fbo_march 			= buildFBO(w/scale, h/scale);
@@ -276,13 +420,13 @@ run = function(shaders) {
   shader_post         = buildShader("fxaa", [fbo_render], shaders, uniforms, audio);
   shader_post2        = buildShader("fxaa", [fbo_fxaa], shaders, uniforms, audio);
   shader_post3        = buildShader("fxaa", [fbo_fxaa_swap], shaders, uniforms, audio);
-  shader_display       = buildShader("bloom", [fbo_render], shaders, uniforms, audio);
+  shader_display       = buildShader("bloom", [fbo_fxaa], shaders, uniforms, audio);
 	// shader_copy 	    = buildShader("copy", [fbo_render, fbo_noise], shaders, uniforms, audio);
 
   var time = 0.0;
 
   //setupWebSockets();
-
+  setupPresetUI();
 
   var accumulator = 0;
   beat = 0;
@@ -291,10 +435,12 @@ run = function(shaders) {
   camTime = 0;
   var LFOtime = 0;
 
+  var lastPreset;
 
 	function render() {
+ 		requestAnimationFrame(render);
+    
     if ( uniforms.pause ) {
-  		requestAnimationFrame(render);
       return;
     }
 
@@ -319,8 +465,6 @@ run = function(shaders) {
       uniforms.camZ = camera.position.z;
 
     }
-
-
 		var a = camera.position;
 		var r = camera.rotation;
 
@@ -347,7 +491,7 @@ run = function(shaders) {
     uniforms.rotationy += uniforms.autoRotY * delta;
     uniforms.rotationz += uniforms.autoRotZ * delta;
 
-    delta *= 5.0;
+    delta *= 10.0;
 
     uniforms.translationx += Math.sin(LFOtime) * uniforms.autoTransX * delta;
     uniforms.translationy += Math.sin(LFOtime) * uniforms.autoTransY * delta;
@@ -364,10 +508,8 @@ run = function(shaders) {
     lerpShaders(shader_raymarch, shader_raymarch_smoothed);
     
     shaderPass(context, shader_raymarch_smoothed, fbo_render)
+    shaderPass(context, shader_post, fbo_fxaa)
     shader_display.draw();
-
-
- 		requestAnimationFrame(render);
 
 	}
 

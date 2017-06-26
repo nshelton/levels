@@ -904,7 +904,7 @@ ThreeAudio.Source.prototype = {
 
     if (a) {
       // Get freq/time data.
-      a.smoothingTimeConstant = 0;
+      a.smoothingTimeConstant = 0.3;
       a.getByteFrequencyData(d.freq);
       a.getByteTimeDomainData(d.time);
 
@@ -915,7 +915,7 @@ ThreeAudio.Source.prototype = {
 
       // Update detectors.
       _.each(this.detectors, function (det) {
-        det.analyse();
+         det.analyse();
       });
     }
 
