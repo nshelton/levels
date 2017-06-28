@@ -59,7 +59,7 @@ var Uniforms = function() {
   this.autoDimY = 0;
   this.autoDimZ = 0;
 
-  this.paramSmoothing = 1.0;
+  this.paramSmoothing = 0.5;
   
 };
 
@@ -404,7 +404,7 @@ run = function(shaders) {
 	var w = uniforms.width = window.innerWidth ;
 	var h = uniforms.height = window.innerHeight;
 
-  
+  $(".close-button").hide();
 	uniforms.g_frameScale = parseInt(gup("res")) || 2;
 
 	// var fbo_march 			= buildFBO(w/scale, h/scale);
